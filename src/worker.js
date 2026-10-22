@@ -57,6 +57,8 @@ const SUPPORT_HTML = `
   </div>
 </section>`;
 
+const STAT_INPUT_HELP = `<div class="small" style="margin:8px 0 10px;line-height:1.8"><b>입력 방법 안내</b><br>스탯창의 주스탯은 <b>총합 (A + B)</b> 형태로 표시됩니다.<br>예: <b>STR 3231 (977 + 2254)</b> → <b>A = 977</b>, <b>B = 2254</b></div>`;
+
 export default {
   async fetch(request, env) {
     const response = await env.ASSETS.fetch(request);
@@ -66,15 +68,35 @@ export default {
     const contentType = response.headers.get("content-type") || "";
     if (!contentType.includes("text/html")) return response;
 
-    const html = await response.text();
-    if (html.includes('id="projectHub"')) return new Response(html, response);
+    let html = await response.text();
 
-    const updated = html.replace("</main>", `${SUPPORT_HTML}</main>`);
+    if (!html.includes("스탯창의 주스탯은 <b>총합 (A + B)</b>")) {
+      html = html.replace(
+        '<section class="card advanced-only" id="statCalSection"><h2>3. 주스탯 1당 스공 효율 측정</h2>',
+        '<section class="card advanced-only" id="statCalSection"><h2>3. 주스탯 1당 스공 효율 측정</h2>' + STAT_INPUT_HELP
+      );
+      html = html.replace(
+        '<section class="card advanced-only" id="pctCalSection"><h2>4. 주스탯 1%당 스공 효율 측정</h2>',
+        '<section class="card advanced-only" id="pctCalSection"><h2>4. 주스탯 1%당 스공 효율 측정</h2>' + STAT_INPUT_HELP
+      );
+    }
+
+    if (!html.includes('올스탯%가 포함된 장비는 현재 실측에서 올스탯% 효과를 무시합니다.')) {
+      html = html.replace(
+        '※ 3번과 4번 측정도 가능한 한 같은 장비·버프·스킬 조건을 유지해주세요.</b>',
+        '※ 3번과 4번 측정도 가능한 한 같은 장비·버프·스킬 조건을 유지해주세요.<br>※ 올스탯%가 포함된 장비는 현재 실측에서 <b>올스탯% 효과를 무시</b>합니다.</b>'
+      );
+    }
+
+    if (!html.includes('id="projectHub"')) {
+      html = html.replace("</main>", `${SUPPORT_HTML}</main>`);
+    }
+
     const headers = new Headers(response.headers);
     headers.delete("content-length");
     headers.delete("etag");
 
-    return new Response(updated, {
+    return new Response(html, {
       status: response.status,
       statusText: response.statusText,
       headers
