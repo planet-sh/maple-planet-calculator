@@ -8,6 +8,7 @@ const SUPPORT_HTML = `
         <b>V1.8 · 2026-10-22</b><br>
         · 간편 계산기 / 심화 계산기 분리<br>
         · 직업별 사냥 주력 스킬명 프리셋 추가<br>
+        · 무기 기본 주스탯 비교 입력 추가<br>
         · 간편 계산기: 주력기 1타당 스킬 데미지% 기반 크확 효율 반영<br>
         · 심화 계산기: 실전 사냥 스킬별 딜 비중 기반 크확 효율 반영<br>
         · 심화 계산기에 주스탯1 · 주스탯1% 실측 효율 추가<br>
@@ -47,6 +48,10 @@ const SUPPORT_HTML = `
       <details class="details" open>
         <summary>간편 계산기와 심화 계산기의 차이는?</summary>
         <div class="small" style="margin-top:8px;line-height:1.7">간편 계산기는 주력기 1타당 스킬 데미지%와 러프 스탯 환산을 사용합니다. 심화 계산기는 공1 · 주스탯1 · 주스탯1% 실측과 실제 사냥에서 측정한 스킬별 딜 비중을 함께 반영합니다.</div>
+      </details>
+      <details class="details">
+        <summary>무기에 붙은 기본 주스탯은 어떻게 계산하나요?</summary>
+        <div class="small" style="margin-top:8px;line-height:1.7">각 무기의 기본 주스탯은 잠재의 깡 주스탯과 합산해 반영합니다. 간편 계산은 주스탯 5 = 공1로 환산하고, 심화 계산은 직접 측정한 주스탯 1당 스공 효율을 사용합니다.</div>
       </details>
       <details class="details">
         <summary>크리티컬 데미지는 어떻게 계산하나요?</summary>
@@ -161,9 +166,56 @@ export default {
       html = html.replace('function calc(){', CRIT_HELPERS + 'function calc(){');
     }
 
+    if (!html.includes("id=\"${w.id}Stat\"")) {
+      html = html.replace(
+        '<label>무기 순수 공격력</label><input id="${w.id}Atk" type="number" value="${atkValue}" min="0" step="1" placeholder="공격력 입력"><label>잠재 1</label>',
+        '<label>무기 순수 공격력</label><input id="${w.id}Atk" type="number" value="${atkValue}" min="0" step="1" placeholder="공격력 입력"><label>무기 기본 주스탯</label><input id="${w.id}Stat" type="number" value="0" min="0" step="1" placeholder="STR / DEX / LUK 등"><label>잠재 1</label>'
+      );
+    }
+
+    html = html.replace(
+      "function clearWeapon(id){document.getElementById(id+'Atk').value='';for(let k=1;k<=3;k++)",
+      "function clearWeapon(id){document.getElementById(id+'Atk').value='';document.getElementById(id+'Stat').value='0';for(let k=1;k<=3;k++)"
+    );
+
+    html = html.replace(
+      "function copyWeapon(from,to){document.getElementById(to+'Atk').value=document.getElementById(from+'Atk').value;for(let k=1;k<=3;k++)",
+      "function copyWeapon(from,to){document.getElementById(to+'Atk').value=document.getElementById(from+'Atk').value;document.getElementById(to+'Stat').value=document.getElementById(from+'Stat').value;for(let k=1;k<=3;k++)"
+    );
+
     html = html.replace(
       "const PRESET_KEY='planet-calculator-preset-v1';const presetIds=['job','crit','equipAtk','buff','buffCustom',...calibrationIds,...statIds,...pctIds];",
       "const PRESET_KEY='planet-calculator-preset-v1';const skillMixIds=['simpleSkillPreset','simpleSkillPct',...Array.from({length:5},(_,i)=>['advSkillPreset'+(i+1),'advSkillPct'+(i+1),'advSkillDamage'+(i+1)]).flat()];const presetIds=['job','crit','equipAtk','buff','buffCustom',...calibrationIds,...statIds,...pctIds,...skillMixIds];"
+    );
+
+    html = html.replace(
+      "W.forEach(w=>{presetIds.push(w.id+'Atk',w.id+'O1',w.id+'O2',w.id+'O3',w.id+'Dmg');",
+      "W.forEach(w=>{presetIds.push(w.id+'Atk',w.id+'Stat',w.id+'O1',w.id+'O2',w.id+'O3',w.id+'Dmg');"
+    );
+
+    html = html.replace(
+      "r.atk=n(id+'Atk');r.dmg=n(id+'Dmg');",
+      "r.atk=n(id+'Atk');r.weaponStat=n(id+'Stat');r.dmg=n(id+'Dmg');"
+    );
+
+    html = html.replace(
+      "function statEquivalents(cal,statCal,pctCal,w){let minEq=0,maxEq=0;if(w.statFlat){if(!statCal)return null;minEq+=w.statFlat*statCal.min/cal.min;maxEq+=w.statFlat*statCal.max/cal.max}",
+      "function statEquivalents(cal,statCal,pctCal,w){let minEq=0,maxEq=0;const totalFlat=(w.weaponStat||0)+w.statFlat;if(totalFlat){if(!statCal)return null;minEq+=totalFlat*statCal.min/cal.min;maxEq+=totalFlat*statCal.max/cal.max}"
+    );
+
+    html = html.replace(
+      "const needsFlat=Object.values(ws).some(w=>w.statFlat>0),needsPct=Object.values(ws).some(w=>w.statPct>0);",
+      "const needsFlat=Object.values(ws).some(w=>w.statFlat>0||w.weaponStat>0),needsPct=Object.values(ws).some(w=>w.statPct>0);"
+    );
+
+    html = html.replace(
+      "if(calcMode==='advanced'&&needsFlat&&!statCal){alert('심화 계산에서 주스탯 +12/+14 잠재를 비교하려면 3번 주스탯1 실측값이 필요합니다.');return}",
+      "if(calcMode==='advanced'&&needsFlat&&!statCal){alert('심화 계산에서 무기 기본 주스탯 또는 주스탯 +12/+14 잠재를 비교하려면 3번 주스탯1 실측값이 필요합니다.');return}"
+    );
+
+    html = html.replace(
+      ":{min:w.statFlat/5+w.statPct/1.5,max:w.statFlat/5+w.statPct/1.5,avg:w.statFlat/5+w.statPct/1.5};",
+      ":{min:((w.weaponStat||0)+w.statFlat)/5+w.statPct/1.5,max:((w.weaponStat||0)+w.statFlat)/5+w.statPct/1.5,avg:((w.weaponStat||0)+w.statFlat)/5+w.statPct/1.5};"
     );
 
     html = html.replace(
@@ -194,6 +246,16 @@ export default {
     html = html.replace(
       "<br>직업 자체 크뎀 ${cd}%p + 찐샾 ${sharpCd}%p / 찐샾 크확 +${sharpCrit}%p / 버프공 +${buffV}<br>",
       "<br>직업 자체 크뎀 ${cd}%p + 찐샾 ${sharpCd}%p / 찐샾 크확 +${sharpCrit}%p / 버프공 +${buffV}<br>크리티컬 데미지는 각 타격의 스킬 데미지%에 +%p로 적용되는 것으로 가정합니다.<br>"
+    );
+
+    html = html.replace(
+      "<td>${fmt(w.statFlat,0)}</td><td>${fmt(w.statPct,0)}%</td>",
+      "<td>${fmt(w.weaponStat||0,0)}</td><td>${fmt(w.statFlat,0)}</td><td>${fmt(w.statPct,0)}%</td>"
+    );
+
+    html = html.replace(
+      "<th>잠재깡공</th><th>공%베이스</th><th>공%증가</th><th>깡주스탯</th><th>주스탯%</th>",
+      "<th>잠재깡공</th><th>공%베이스</th><th>공%증가</th><th>무기주스탯</th><th>잠재깡주스탯</th><th>주스탯%</th>"
     );
 
     if (!html.includes('id="projectHub"')) {
