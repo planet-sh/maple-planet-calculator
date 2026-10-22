@@ -1,4 +1,4 @@
-import baseWorker from './worker-v2-recommend.js';
+import baseWorker from './worker-v2-recommend-captain.js';
 
 function patchV21Release(html){
   html=html.replace('메이플 플래닛 계산기 <span class="tag">V2.0</span>','메이플 플래닛 계산기 <span class="tag">V2.1</span>');
