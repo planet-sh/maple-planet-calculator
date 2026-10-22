@@ -1,6 +1,6 @@
 {
   "name": "maple-planet-calculator",
-  "main": "./src/worker-v2-1-release.js",
+  "main": "./src/worker-v2-1-common-reco.js",
   "compatibility_date": "2026-10-22",
   "assets": {
     "directory": "./public",
