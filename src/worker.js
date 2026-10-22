@@ -175,7 +175,7 @@ export default {
 
     html = html.replace(
       "const cur=ws.cur;Object.entries(ws).forEach(([key,w])=>{",
-      "const cur=ws.cur;const nonWeaponCrit=baseCrit-cur.crit;const baseAppliedCrit=Math.max(0,Math.min(100,nonWeaponCrit+cur.crit+sharpCrit));Object.entries(ws).forEach(([key,w])=>{"
+      "const cur=ws.cur;const nonWeaponCrit=baseCrit;const baseAppliedCrit=Math.max(0,Math.min(100,nonWeaponCrit+cur.crit+sharpCrit));Object.entries(ws).forEach(([key,w])=>{"
     );
 
     html = html.replace(
