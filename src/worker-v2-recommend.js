@@ -27,7 +27,7 @@ const RECO_SCRIPT = `
     '팔라딘':{name:'차지 블로우',pct:350,note:'어드밴스드 차지 M 적용'},
     '아란 (풀콤보 기준)':{name:'파이널 블로우',pct:700},
     '보우마스터':{name:'폭풍의 시',pct:100,note:'1발당'},
-    '신궁':{name:'피어싱 + 스나이핑',mix:[{name:'피어싱',pct:850,weight:.5},{name:'스나이핑',pct:1500,weight:.5}],note:'실전 딜 비중 50:50 · 스나이핑 1500% × 2타 중 1타당'}
+    '신궁':{name:'스트레이프 + 스나이핑',mix:[{name:'스트레이프',pct:120,weight:.5},{name:'스나이핑',pct:1500,weight:.5}],note:'실전 딜 비중 50:50 · 스트레이프 120% × 4타, 스나이핑 1500% × 2타의 1타당 수치'}
   };
   const weaponProfiles={
     timeless:{label:'타임리스/리버스급',firstFlat:16,lowerFlat:14,reference:true},
@@ -161,7 +161,9 @@ const RECO_SCRIPT = `
 </script>`;
 
 function patchRecommend(html){
-  html=html.replace('</style>',`\n.reco-rank{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--line)}.reco-rank:last-child{border-bottom:0}.reco-rank span{color:var(--good);font-weight:700;white-space:nowrap}\n</style>`);
+  html=html.replace('</style>',`\
+.reco-rank{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--line)}.reco-rank:last-child{border-bottom:0}.reco-rank span{color:var(--good);font-weight:700;white-space:nowrap}\
+</style>`);
   html=html.replace('</body>',RECO_SCRIPT+'</body>');
   return html;
 }
