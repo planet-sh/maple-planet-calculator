@@ -90,6 +90,26 @@ const QUICK_SCRIPT = `
 })();
 </script>`;
 
+function patchV19Copy(html){
+  html=html.replace(
+    '<b>V1.8 · 2026-10-22</b><br>',
+    '<b>V1.9 · 2026-10-23</b><br>\n        · 초간단 비교 모드 추가 — 깡공 ↔ 총데미지 빠른 비교<br>\n        · 초간단 측정 조건 표준화: 리프레 대기 상태 · 혼테일 버프만 적용<br>\n        · 공1당 최대 스공 실측값과 현재 최대 스공으로 기대 화력 자동 계산<br>\n        · 공격력/총데미지 교환의 손익분기 최대 스공 자동 표시<br>\n        · 단순 상승률 차감이 아닌 공격력 배율 × 총데미지 배율 방식 적용<br>\n        <br><b>V1.8 · 2026-10-22</b><br>'
+  );
+  html=html.replace(
+    '<b>V1.7</b> · 무기 잠재 비교, 공1 실측, 직업 프리셋, 자동 저장, 다크/라이트 모드<br>',
+    '<b>V1.8</b> · 간편/심화 분리, 실전 스킬 비중·DPS, 주스탯 실측, 크리 계산 구조 개선<br>\n          <b>V1.7</b> · 무기 잠재 비교, 공1 실측, 직업 프리셋, 자동 저장, 다크/라이트 모드<br>'
+  );
+  html=html.replace(
+    '<summary>간편 계산기와 심화 계산기의 차이는?</summary>\n        <div class="small" style="margin-top:8px;line-height:1.7">간편 계산기는 대표 주력기의 1타당 스킬 데미지%와 러프 스탯 환산을 사용합니다. 심화 계산기는 공1 · 주스탯1 · 주스탯1% 실측을 기본으로 사용하고, 필요할 때 <b>실전 스킬 비중·DPS 반영</b>을 켜 더 정밀하게 계산할 수 있습니다.</div>',
+    '<summary>초간단 / 간편 / 심화 계산기의 차이는?</summary>\n        <div class="small" style="margin-top:8px;line-height:1.7"><b>초간단 비교</b>는 리프레에서 혼벞만 받은 상태의 최대 스공과 공1당 최대 스공 상승량으로 <b>깡공 ↔ 총데미지</b>를 빠르게 비교합니다. 공%, 크확, 주스탯, 무기 순공까지 달라지는 매물은 <b>간편 계산기</b>를 사용하세요. <b>심화 계산기</b>는 공1 · 주스탯1 · 주스탯1% 실측을 기본으로 사용하고, 필요할 때 <b>실전 스킬 비중·DPS 반영</b>을 켜 더 정밀하게 계산할 수 있습니다.</div>'
+  );
+  html=html.replace(
+    '<details class="details">\n        <summary>무기에 붙은 기본 주스탯은 어떻게 계산하나요?</summary>',
+    '<details class="details">\n        <summary>초간단 비교는 얼마나 정확한가요?</summary>\n        <div class="small" style="margin-top:8px;line-height:1.7">현재 무기와 비교 무기의 차이가 <b>깡공과 총데미지뿐이라면</b>, 같은 혼벞 상태에서 측정한 최대 스공과 공1 실측값을 사용하므로 빠른 비교치로 충분히 유효합니다. 다만 스공 표시 반올림, 공1 실측 오차가 남을 수 있으며, 다른 옵션까지 함께 바뀌면 간편/심화 계산기를 이용해주세요.</div>\n      </details>\n      <details class="details">\n        <summary>무기에 붙은 기본 주스탯은 어떻게 계산하나요?</summary>'
+  );
+  return html;
+}
+
 export default {
   async fetch(request, env, ctx) {
     const response = await baseWorker.fetch(request, env, ctx);
@@ -98,14 +118,11 @@ export default {
     const contentType = response.headers.get('content-type') || '';
     if (!contentType.includes('text/html')) return response;
     let html = await response.text();
+    html = patchV19Copy(html);
     if (!html.includes('id="quickMode"')) {
       html = html.replace(
         '<div class="mode-switch" role="tablist" aria-label="계산기 종류 선택">',
         '<div class="mode-switch" role="tablist" aria-label="계산기 종류 선택"><button class="mode-btn" id="quickMode" type="button" role="tab" aria-selected="false">초간단 비교</button>'
-      );
-      html = html.replace(
-        '<div class="small mode-desc" id="modeDesc">',
-        '<div class="small mode-desc" id="modeDesc">'
       );
       html = html.replace(
         '<section class="card"><h2>1. 캐릭터 / 장비</h2>',
