@@ -59,6 +59,16 @@ const COMMON_RECO_SCRIPT = `
       const obs=new MutationObserver(paint);obs.observe(flow,{childList:true,characterData:true,subtree:true});paint();
     }
   }
+
+  // 초간단에서는 일반/심화 실측값을 전제로 하는 잠재 역전표를 숨김
+  const breakpointDetails=Array.from(card.querySelectorAll('details')).find(d=>(d.querySelector('summary')?.textContent||'').includes('잠재 역전표'));
+  function syncQuickRecoUi(){
+    const quick=q('quickMode')?.classList.contains('active')||document.body.dataset.calcMode==='quick';
+    if(breakpointDetails)breakpointDetails.style.display=quick?'none':'';
+  }
+  ['quickMode','simpleMode','advancedMode'].forEach(id=>q(id)?.addEventListener('click',()=>setTimeout(syncQuickRecoUi,0)));
+  const bodyObs=new MutationObserver(syncQuickRecoUi);bodyObs.observe(document.body,{attributes:true,attributeFilter:['data-calc-mode']});
+  syncQuickRecoUi();
 })();
 </script>`;
 
