@@ -60,7 +60,7 @@ const COMMON_RECO_SCRIPT = `
     }
   }
 
-  // 초간단에서는 일반/심화 실측값을 전제로 하는 잠재 역전표를 숨김
+  // 초간단에서는 일반/심화 실측값을 전제로 하는 영역을 숨김
   const breakpointDetails=Array.from(card.querySelectorAll('details')).find(d=>(d.querySelector('summary')?.textContent||'').includes('잠재 역전표'));
   function syncQuickRecoUi(){
     const quick=q('quickMode')?.classList.contains('active')||document.body.dataset.calcMode==='quick';
@@ -73,7 +73,7 @@ const COMMON_RECO_SCRIPT = `
 </script>`;
 
 function patchCommonReco(html){
-  html=html.replace('</style>',`\nbody[data-calc-mode="quick"] main>#potentialRecommendCard{display:block!important}\n.common-recommend-card{display:block}\n.reco-tier-flow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:10px}\n.reco-tier-flow .metric b{font-size:14px;line-height:1.45}\n@media(max-width:720px){.reco-tier-flow{grid-template-columns:1fr}}\n</style>`);
+  html=html.replace('</style>',`\nbody[data-calc-mode="quick"] main>#potentialRecommendCard{display:block!important}\nbody[data-calc-mode="quick"] #recoMeasured{display:none!important}\nbody[data-calc-mode="quick"] .weapon:has(#recoBaseTop){grid-column:1/-1}\n.common-recommend-card{display:block}\n.reco-tier-flow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:10px}\n.reco-tier-flow .metric b{font-size:14px;line-height:1.45}\n@media(max-width:720px){.reco-tier-flow{grid-template-columns:1fr}}\n</style>`);
   html=html.replace('</body>',COMMON_RECO_SCRIPT+'</body>');
   return html;
 }
