@@ -38,50 +38,21 @@ const BUFF_SCRIPT = `
 })();
 </script>`;
 
-const QUICK_BOSS_FIX_SCRIPT = `
-<script>
-(()=>{
-  const q=id=>document.getElementById(id);
-  const num=id=>{const v=parseFloat(q(id)?.value);return Number.isFinite(v)?v:0};
-  function recalcQuickV2(){
-    if(!q('quickCompareSection'))return;
-    const s=num('quickMaxRange'),per=num('quickAtkPer1'),atk=num('quickAtkDelta');
-    const d1=num('quickCurrentDmg'),d2=num('quickCandidateDmg');
-    const isRating=q('fieldMode')?.value==='rating';
-    const guildBoss=isRating&&q('guildBossToggle')?.checked?5:0;
-    const b1=isRating?num('quickCurrentBoss')+guildBoss:0;
-    const b2=isRating?num('quickCandidateBoss')+guildBoss:0;
-    const gain=per*atk;
-    if(q('quickAtkGain'))q('quickAtkGain').textContent=(gain>=0?'+':'')+(Number.isFinite(gain)?gain.toFixed(0):'0');
-    if(s<=0||per<=0){if(q('quickRelative'))q('quickRelative').textContent='-';if(q('quickBreakEven'))q('quickBreakEven').textContent='-';if(q('quickVerdict'))q('quickVerdict').textContent='최대 스공과 공1 효율을 입력해주세요.';return}
-    const changed=s+gain;
-    if(changed<=0)return;
-    const rel=(changed/s)*((100+d2+b2)/(100+d1+b1));
-    const pct=(rel-1)*100;
-    if(q('quickRelative'))q('quickRelative').textContent=(rel*100).toFixed(2)+'%';
-    let beText='해당 없음';
-    const dmgDiff=(d1+b1)-(d2+b2);
-    if(gain!==0&&dmgDiff!==0){const be=gain*(100+d2+b2)/dmgDiff;if(be>0&&Number.isFinite(be))beText=Math.round(be).toLocaleString()}
-    if(q('quickBreakEven'))q('quickBreakEven').textContent=beText;
-    if(q('quickVerdict')){
-      if(Math.abs(pct)<0.05)q('quickVerdict').textContent='거의 동일 · 오차 범위 수준';
-      else if(pct>0)q('quickVerdict').textContent='비교 무기 우세 · 현재 대비 +'+pct.toFixed(2)+'%';
-      else q('quickVerdict').textContent='현재 무기 우세 · 비교 무기 '+pct.toFixed(2)+'%';
-    }
-    const atkPct=gain/s*100,dmgRatio=((100+d2+b2)/(100+d1+b1)-1)*100;
-    if(q('quickExplain'))q('quickExplain').textContent='스공 변화 '+(atkPct>=0?'+':'')+atkPct.toFixed(2)+'% · 총뎀+보공 배율 변화 '+(dmgRatio>=0?'+':'')+dmgRatio.toFixed(2)+'% · 길드보공 '+(guildBoss?'+5%':'OFF')+' · 두 배율을 곱해 최종 비교';
-  }
-  ['quickMaxRange','quickAtkPer1','quickAtkDelta','quickCurrentDmg','quickCandidateDmg','quickCurrentBoss','quickCandidateBoss','fieldMode','guildBossToggle'].forEach(id=>{
-    const el=q(id);if(!el)return;el.addEventListener('input',recalcQuickV2);el.addEventListener('change',recalcQuickV2);
-  });
-  recalcQuickV2();
-})();
-</script>`;
-
 function patchBuffs(html){
   if(!html.includes('id="huntingBuffWrap"')){
     html=html.replace('<div class="metrics" id="ratingMetrics" style="margin-top:14px">',BUFF_HTML+'<div class="metrics" id="ratingMetrics" style="margin-top:14px">');
   }
+
+  // 초간단 비교는 V1.9 취지대로 깡공 ↔ 총데미지만 비교한다.
+  // V2에서 추가했던 보공 입력 UI는 일반/정밀 계산에만 남기고 초간단에서는 제거한다.
+  html=html.replace(
+    '\n      <label>현재 무기 보스 공격력 (%)</label>\n      <input id="quickCurrentBoss" type="number" min="0" step="1" placeholder="예: 60">',
+    ''
+  );
+  html=html.replace(
+    '\n      <label>비교 무기 보스 공격력 (%)</label>\n      <input id="quickCandidateBoss" type="number" min="0" step="1" placeholder="예: 60">',
+    ''
+  );
 
   html=html.replace(
     "const equip=n('equipAtk'),baseCrit=n('crit'),cd=jobs[job.value].cd||0,sharpCrit=jobs[job.value].sharpCrit??15,sharpCd=jobs[job.value].sharpCd??140,buffV=buff.value==='custom'?n('buffCustom'):+buff.value;const ws=",
@@ -107,7 +78,7 @@ function patchBuffs(html){
     '혼테일 버프를 기본으로 하되 뿌리기·영메를 사용한다면 <b>두 실측 모두 같은 ON/OFF 상태</b>로 최대 스공과 공1당 최대 스공 상승량을 측정하세요.<br>'
   );
 
-  html=html.replace('</body>',BUFF_SCRIPT+QUICK_BOSS_FIX_SCRIPT+'</body>');
+  html=html.replace('</body>',BUFF_SCRIPT+'</body>');
   return html;
 }
 
