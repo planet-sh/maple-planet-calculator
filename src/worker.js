@@ -7,6 +7,7 @@ const SUPPORT_HTML = `
       <div class="small" style="margin-top:8px;line-height:1.8">
         <b>V1.8 · 2026-10-22</b><br>
         · 간편 계산기 / 심화 계산기 분리<br>
+        · 직업별 사냥 주력 스킬명 프리셋 추가<br>
         · 간편 계산기: 주력기 1타당 스킬 데미지% 기반 크확 효율 반영<br>
         · 심화 계산기: 실전 사냥 스킬별 딜 비중 기반 크확 효율 반영<br>
         · 심화 계산기에 주스탯1 · 주스탯1% 실측 효율 추가<br>
@@ -74,9 +75,11 @@ const SUPPORT_HTML = `
 const STAT_INPUT_HELP = `<div class="small" style="margin:8px 0 10px;line-height:1.8"><b>입력 방법 안내</b><br>스탯창의 주스탯은 <b>총합 (A + B)</b> 형태로 표시됩니다.<br>예: <b>STR 3231 (977 + 2254)</b> → <b>A = 977</b>, <b>B = 2254</b></div>`;
 
 const SIMPLE_SKILL_HTML = `<div class="simple-only">
+  <label>사냥 주력 스킬 프리셋</label>
+  <select id="simpleSkillPreset"></select>
   <label>사냥 주력기 1타당 스킬 데미지 (%)</label>
   <input id="simpleSkillPct" type="number" value="420" min="1" step="1" placeholder="예: 420">
-  <div class="small">사냥 시 주로 사용하는 주력기의 <b>1타당 스킬 데미지%</b>를 입력하세요.<br>예) 420% 데미지로 2회 공격 → <b>420</b> 입력<br>※ 크리티컬 데미지는 각 타격의 스킬 데미지%에 +%p로 적용되는 것으로 가정합니다. 타수는 상대적인 크확 효율에 영향을 주지 않습니다.</div>
+  <div class="small">직업 선택 시 자주 사용하는 사냥 스킬명이 프리셋으로 표시됩니다. 스킬 데미지%는 현재 직접 입력해주세요.<br>예) 420% 데미지로 2회 공격 → <b>420</b> 입력<br>※ 크리티컬 데미지는 각 타격의 스킬 데미지%에 +%p로 적용되는 것으로 가정합니다. 타수는 상대적인 크확 효율에 영향을 주지 않습니다.</div>
 </div>`;
 
 const ADVANCED_SKILL_HTML = `<section class="card advanced-only" id="skillMixSection">
@@ -87,12 +90,12 @@ const ADVANCED_SKILL_HTML = `<section class="card advanced-only" id="skillMixSec
     <b style="color:var(--warn)">※ 측정 딜량은 절대 데미지 계산에 다시 사용하지 않고, 스킬별 딜 비중을 구하는 용도로만 사용합니다.</b>
   </div>
   <div id="skillMixRows">
-    ${[1,2,3,4,5].map(i => `<div class="skill-mix-row"><div><label>스킬 ${i} 이름 (선택)</label><input id="advSkillName${i}" type="text" placeholder="예: 드래곤 스트라이크"></div><div><label>1타당 스킬 데미지 (%)</label><input id="advSkillPct${i}" type="number" min="0" step="1" placeholder="예: 420"></div><div><label>실전 측정 딜량</label><input id="advSkillDamage${i}" type="number" min="0" step="any" placeholder="DPS 또는 누적 딜"></div></div>`).join('')}
+    ${[1,2,3,4,5].map(i => `<div class="skill-mix-row"><div><label>스킬 ${i} 프리셋</label><select id="advSkillPreset${i}"></select></div><div><label>1타당 스킬 데미지 (%)</label><input id="advSkillPct${i}" type="number" min="0" step="1" placeholder="예: 420"></div><div><label>실전 측정 딜량</label><input id="advSkillDamage${i}" type="number" min="0" step="any" placeholder="DPS 또는 누적 딜"></div></div>`).join('')}
   </div>
   <div class="metric" style="margin-top:12px"><span class="small">입력된 스킬 딜 비중</span><b id="skillMixPreview">-</b><span class="small">딜량 단위는 자유입니다. 같은 측정 기준의 숫자라면 비율로 자동 환산됩니다.</span></div>
 </section>`;
 
-const CRIT_HELPERS = `function skillMixData(){const rows=[];for(let i=1;i<=5;i++){const pct=n('advSkillPct'+i),damage=n('advSkillDamage'+i);const name=(document.getElementById('advSkillName'+i)?.value||'').trim()||('스킬 '+i);if(pct>0&&damage>0)rows.push({name,pct,damage})}const total=rows.reduce((s,r)=>s+r.damage,0);return total>0?rows.map(r=>({...r,weight:r.damage/total})):[]}function critRelativeMultiplier(appliedCrit,baseAppliedCrit,critBonus){const c=Math.max(0,Math.min(100,appliedCrit))/100,c0=Math.max(0,Math.min(100,baseAppliedCrit))/100;if(calcMode==='advanced'){const rows=skillMixData();if(rows.length){return rows.reduce((sum,r)=>{const base=r.pct+c0*critBonus;if(base<=0)return sum;return sum+r.weight*((r.pct+c*critBonus)/base)},0)}}const pct=Math.max(1,n('simpleSkillPct')||420);return (pct+c*critBonus)/(pct+c0*critBonus)}function updateSkillMixPreview(){const el=document.getElementById('skillMixPreview');if(!el)return;const rows=skillMixData();el.innerHTML=rows.length?rows.map(r=>\`${'${'}r.name} ${'${'}(r.weight*100).toFixed(1)}%\`).join(' · '):'-'};`;
+const CRIT_HELPERS = `const huntingSkillPresets={"팔라딘":["차지블로우","생츄어리"],"히어로":["브랜디쉬"],"다크나이트":["스피어 버스터"],"아란 (풀콤보 기준)":["더블스윙","트리플스윙","파이널블로우","콤보템페스트"],"캡틴":["토르페도","캐논"],"바이퍼":["드래곤 스트라이크"],"신궁":["피어싱","스나이핑","스트레이프"],"보우마스터":["폭풍의시"],"섀도어":["부메랑스텝"],"나이트로드":["트리플스로우"],"불독":["페럴라이즈","메테오"],"썬콜":["체인라이트닝","블리자드"],"비숍":["제네시스","엔젤레이"],"에반":["플레임 휠","다크포그"]};function currentSkillPreset(){return huntingSkillPresets[job.value]||[]}function fillSkillSelect(el,includeDirect=true){if(!el)return;const prev=el.value;const list=currentSkillPreset();el.innerHTML='';list.forEach(name=>el.add(new Option(name,name)));if(includeDirect)el.add(new Option('직접 입력','__custom__'));if(prev&&Array.from(el.options).some(o=>o.value===prev))el.value=prev}function syncSkillPresets(){fillSkillSelect(document.getElementById('simpleSkillPreset'));for(let i=1;i<=5;i++)fillSkillSelect(document.getElementById('advSkillPreset'+i));updateSkillMixPreview()}function skillMixData(){const rows=[];for(let i=1;i<=5;i++){const pct=n('advSkillPct'+i),damage=n('advSkillDamage'+i);const preset=document.getElementById('advSkillPreset'+i);const name=preset&&preset.value&&preset.value!=='__custom__'?preset.value:('스킬 '+i);if(pct>0&&damage>0)rows.push({name,pct,damage})}const total=rows.reduce((s,r)=>s+r.damage,0);return total>0?rows.map(r=>({...r,weight:r.damage/total})):[]}function critRelativeMultiplier(appliedCrit,baseAppliedCrit,critBonus){const c=Math.max(0,Math.min(100,appliedCrit))/100,c0=Math.max(0,Math.min(100,baseAppliedCrit))/100;if(calcMode==='advanced'){const rows=skillMixData();if(rows.length){return rows.reduce((sum,r)=>{const base=r.pct+c0*critBonus;if(base<=0)return sum;return sum+r.weight*((r.pct+c*critBonus)/base)},0)}}const pct=Math.max(1,n('simpleSkillPct')||420);return (pct+c*critBonus)/(pct+c0*critBonus)}function updateSkillMixPreview(){const el=document.getElementById('skillMixPreview');if(!el)return;const rows=skillMixData();el.innerHTML=rows.length?rows.map(r=>\`${'${'}r.name} ${'${'}(r.weight*100).toFixed(1)}%\`).join(' · '):'-'};`;
 
 export default {
   async fetch(request, env) {
@@ -160,12 +163,17 @@ export default {
 
     html = html.replace(
       "const PRESET_KEY='planet-calculator-preset-v1';const presetIds=['job','crit','equipAtk','buff','buffCustom',...calibrationIds,...statIds,...pctIds];",
-      "const PRESET_KEY='planet-calculator-preset-v1';const skillMixIds=['simpleSkillPct',...Array.from({length:5},(_,i)=>['advSkillName'+(i+1),'advSkillPct'+(i+1),'advSkillDamage'+(i+1)]).flat()];const presetIds=['job','crit','equipAtk','buff','buffCustom',...calibrationIds,...statIds,...pctIds,...skillMixIds];"
+      "const PRESET_KEY='planet-calculator-preset-v1';const skillMixIds=['simpleSkillPreset','simpleSkillPct',...Array.from({length:5},(_,i)=>['advSkillPreset'+(i+1),'advSkillPct'+(i+1),'advSkillDamage'+(i+1)]).flat()];const presetIds=['job','crit','equipAtk','buff','buffCustom',...calibrationIds,...statIds,...pctIds,...skillMixIds];"
+    );
+
+    html = html.replace(
+      "job.addEventListener('change',syncJobPreset);critInput.addEventListener('input',updateSharpPreview);syncJobPreset();",
+      "job.addEventListener('change',()=>{syncJobPreset();syncSkillPresets()});critInput.addEventListener('input',updateSharpPreview);syncJobPreset();setTimeout(syncSkillPresets,0);"
     );
 
     html = html.replace(
       "updatePctPreview();return true}catch(e){return false}}restorePreset();",
-      "updatePctPreview();updateSkillMixPreview();return true}catch(e){return false}}restorePreset();"
+      "updatePctPreview();syncSkillPresets();updateSkillMixPreview();return true}catch(e){return false}}restorePreset();"
     );
 
     html = html.replace(
