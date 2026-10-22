@@ -17,16 +17,29 @@ const RECO_SCRIPT = `
     '섀도어':{crit:0,cd:0,sharpCrit:15,sharpCd:140},'히어로':{crit:0,cd:0,sharpCrit:15,sharpCd:140},
     '팔라딘':{crit:0,cd:0,sharpCrit:15,sharpCd:140},'다크나이트':{crit:0,cd:0,sharpCrit:15,sharpCd:140}
   };
+  const jobSkill={
+    '바이퍼':{name:'드래곤 스트라이크',pct:420,note:'420% × 2타 중 1타당'},
+    '캡틴':{name:'배틀쉽 토르페도',pct:780},
+    '나이트로드':{name:'트리플 스로우',pct:150,note:'3타 중 1타당'},
+    '섀도어':{name:'부메랑 스텝',pct:500,note:'2타 중 1타당'},
+    '히어로':{name:'브랜디쉬',pct:290},
+    '다크나이트':{name:'스피어 버스터',pct:170,note:'3타 중 1타당'},
+    '팔라딘':{name:'차지 블로우',pct:350,note:'어드밴스드 차지 M 적용'},
+    '아란 (풀콤보 기준)':{name:'파이널 블로우',pct:700},
+    '보우마스터':{name:'폭풍의 시',pct:100,note:'1발당'},
+    '신궁':{name:'피어싱',pct:850,note:'M 기준 최대 공격력'}
+  };
   const firstLines=[['공16','flat',16],['공9%','atkPct',9],['크9','crit',9],['총9','dmg',9]];
   const lowerLines=[['공14','flat',14],['공6%','atkPct',6],['크8','crit',8],['총6','dmg',6]];
-  const WEAPON_UP_ATK=20, OTHER_ATK=20, SKILL=420;
+  const WEAPON_UP_ATK=20, OTHER_ATK=20;
 
   function critGain(jobName,bonus){
     const j=jobCrit[jobName]||jobCrit['바이퍼'];
+    const skill=(jobSkill[jobName]||{pct:420}).pct;
     const c0=Math.min(100,j.crit+j.sharpCrit)/100;
     const c1=Math.min(100,j.crit+j.sharpCrit+bonus)/100;
     const cd=j.cd+j.sharpCd;
-    return (SKILL+c1*cd)/(SKILL+c0*cd);
+    return (skill+c1*cd)/(skill+c0*cd);
   }
   function basePureAtk(jobName){
     return (timelessAtk[jobName]||100)+WEAPON_UP_ATK+OTHER_ATK;
@@ -81,11 +94,11 @@ const RECO_SCRIPT = `
       q('recoMeasuredInfo').textContent='평균 스공 '+fmt(measured.avg)+' · 공1당 평균 +'+measured.per.toFixed(1);
       q('recoMeasuredTop').innerHTML=m.map((x,i)=>'<div class="reco-rank"><b>'+(i+1)+'위 '+label(x.lines)+'</b><span>'+(x.score/mb*100).toFixed(2)+'%</span></div>').join('');
     }else q('recoMeasured').style.display='none';
-    const crit8=critGain(job,8);
+    const crit8=critGain(job,8),skill=jobSkill[job]||{name:'대표 스킬',pct:420};
     const rows=[250,200,150,100].map(per=>'<tr><td>+'+per+'</td><td>'+fmt(14*per/.09)+'</td><td>'+fmt(breakEven(per,crit8))+'</td></tr>').join('');
     q('recoBreakRows').innerHTML=rows;
     const critPct=(crit8-1)*100;
-    q('recoCritNote').textContent='찐샾 상시 · 대표 스킬 420% 가정에서 크8 기대효율 약 +'+critPct.toFixed(2)+'%';
+    q('recoCritNote').textContent='찐샾 상시 · '+skill.name+' M '+skill.pct+'%'+(skill.note?' ('+skill.note+')':'')+' 기준 크8 기대효율 약 +'+critPct.toFixed(2)+'%';
     const type=job==='나이트로드'?'저스펙: 공공 계열 강세 · 중스펙: 총9 vs 공16 경쟁 · 고스펙: 총뎀 우세, 크확도 깡공 추월 가능':
       (job==='아란 (풀콤보 기준)'||job==='보우마스터'||job==='신궁'?'저스펙: 깡공 강세 · 중스펙: 총뎀 우세 전환 · 고스펙: 크확도 깡공과 경쟁 가능':'저스펙: 깡공 강세 · 중스펙: 총뎀 우세 전환 · 고스펙: 총뎀 중심, 크확은 후순위');
     q('recoFlow').textContent=type;
@@ -95,7 +108,7 @@ const RECO_SCRIPT = `
   const host=job.closest('section.card');
   if(host&&!q('potentialRecommendCard')){
     const card=document.createElement('section');card.className='card';card.id='potentialRecommendCard';
-    card.innerHTML='<div class="weapon-head"><h2 style="margin:0">직업별 추천 잠재 <span class="tag">참고</span></h2><span class="small" id="recoWeaponAtk"></span></div><div class="small" style="margin-top:8px">선택 직업의 일반 필드 사냥용 참고표입니다. <b>타임리스 기본 무기공 + 주문서 작·성장치 평균 +20 + 기타 공격력 장비 합 +20</b>, 기본 총데미지 0%, 찐샾 상시를 기준으로 합니다.</div><div class="metric" style="margin-top:12px"><span class="small" id="recoJobName"></span><b id="recoFlow" style="font-size:16px;line-height:1.5"></b></div><div class="grid" style="margin-top:12px"><div class="weapon"><h3>기본 추천 TOP 3</h3><div id="recoBaseTop"></div></div><div class="weapon" id="recoMeasured" style="display:none"><h3>내 실측 기준 TOP 3</h3><div class="small" id="recoMeasuredInfo"></div><div id="recoMeasuredTop"></div></div></div><details class="details"><summary>잠재 역전표 보기</summary><div class="small" style="margin-top:8px">현재 평균 스공이 아래 값을 넘으면 동일 조건에서 <b>공14보다 총9/크8의 기대효율이 높아지는</b> 대략적인 경계입니다.</div><div style="overflow:auto"><table><thead><tr><th>공1당 평균 스공</th><th>공14 → 총9 역전</th><th>공14 → 크8 역전</th></tr></thead><tbody id="recoBreakRows"></tbody></table></div><div class="small" id="recoCritNote"></div></details><div class="small" style="margin-top:10px">※ 추천은 참고용입니다. 실제 캐릭터는 공1 실측값·주력기 구성·버프 상태에 따라 달라질 수 있으며, 공1 실측 완료 시 위 카드가 현재 입력값 기준으로 자동 보정됩니다.</div>';
+    card.innerHTML='<div class="weapon-head"><h2 style="margin:0">직업별 추천 잠재 <span class="tag">참고</span></h2><span class="small" id="recoWeaponAtk"></span></div><div class="small" style="margin-top:8px">선택 직업의 일반 필드 사냥용 참고표입니다. <b>타임리스 기본 무기공 + 주문서 작·성장치 평균 +20 + 기타 공격력 장비 합 +20</b>, 기본 총데미지 0%, 찐샾 상시를 기준으로 합니다. 크확 효율은 직업별 대표 주력기 M의 <b>1타당 스킬 데미지%</b>를 사용합니다.</div><div class="metric" style="margin-top:12px"><span class="small" id="recoJobName"></span><b id="recoFlow" style="font-size:16px;line-height:1.5"></b></div><div class="grid" style="margin-top:12px"><div class="weapon"><h3>기본 추천 TOP 3</h3><div id="recoBaseTop"></div></div><div class="weapon" id="recoMeasured" style="display:none"><h3>내 실측 기준 TOP 3</h3><div class="small" id="recoMeasuredInfo"></div><div id="recoMeasuredTop"></div></div></div><details class="details"><summary>잠재 역전표 보기</summary><div class="small" style="margin-top:8px">현재 평균 스공이 아래 값을 넘으면 동일 조건에서 <b>공14보다 총9/크8의 기대효율이 높아지는</b> 대략적인 경계입니다.</div><div style="overflow:auto"><table><thead><tr><th>공1당 평균 스공</th><th>공14 → 총9 역전</th><th>공14 → 크8 역전</th></tr></thead><tbody id="recoBreakRows"></tbody></table></div><div class="small" id="recoCritNote"></div></details><div class="small" style="margin-top:10px">※ 추천은 참고용입니다. 실제 캐릭터는 공1 실측값·주력기 구성·버프 상태에 따라 달라질 수 있으며, 공1 실측 완료 시 위 카드가 현재 입력값 기준으로 자동 보정됩니다.</div>';
     host.insertAdjacentElement('afterend',card);
   }
   job.addEventListener('change',()=>setTimeout(render,0));
