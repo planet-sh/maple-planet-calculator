@@ -8,6 +8,7 @@ const SUPPORT_HTML = `
         <b>V1.8 · 2026-10-22</b><br>
         · 간편 계산기 / 심화 계산기 분리<br>
         · 심화 계산기 직업별 사냥 스킬 프리셋 추가<br>
+        · 심화 스킬 입력: 기본 1개 + 필요 시 추가 방식으로 개선<br>
         · 무기 기본 주스탯 비교 입력 추가<br>
         · 간편 계산기: 대표 주력기 1타당 스킬 데미지% 기반 크확 효율 반영<br>
         · 심화 계산기: 실전 사냥 스킬별 딜 비중 기반 크확 효율 반영<br>
@@ -59,7 +60,7 @@ const SUPPORT_HTML = `
       </details>
       <details class="details">
         <summary>심화 계산기의 실전 딜량은 어떻게 쓰나요?</summary>
-        <div class="small" style="margin-top:8px;line-height:1.7">동일 사냥터에서 가능하면 30분~1시간 이상 측정한 스킬별 DPS 또는 누적 딜량을 입력하세요. 입력값은 절대 데미지로 다시 계산하지 않고, <b>각 스킬이 실제 사냥딜에서 차지한 비중</b>을 구하는 용도로만 사용합니다.</div>
+        <div class="small" style="margin-top:8px;line-height:1.7">동일 사냥터에서 가능하면 30분~1시간 이상 측정한 스킬별 DPS 또는 누적 딜량을 입력하세요. 입력값은 절대 데미지로 다시 계산하지 않고, <b>각 스킬이 실제 사냥딜에서 차지한 비중</b>을 구하는 용도로만 사용합니다. 주력 스킬이 하나라면 한 줄만 입력하면 자동으로 100% 비중으로 처리됩니다.</div>
       </details>
       <details class="details">
         <summary>계산값이 실제 사냥 딜과 완전히 같나요?</summary>
@@ -89,16 +90,18 @@ const ADVANCED_SKILL_HTML = `<section class="card advanced-only" id="skillMixSec
   <h2>5. 실전 사냥 스킬 딜 비중</h2>
   <div class="small" style="margin-bottom:10px;line-height:1.8">
     동일 사냥터에서 가능하면 <b>30분~1시간 이상</b> 사냥하며 측정한 스킬별 DPS 또는 누적 딜량을 입력해주세요.<br>
+    주로 사용하는 스킬이 하나라면 <b>1개만 입력하면 됩니다.</b> 여러 스킬을 사용하는 경우 아래 <b>+ 스킬 추가</b> 버튼으로 필요한 만큼 추가해주세요.<br>
     각 스킬의 <b>1타당 스킬 데미지%</b>와 측정 딜량을 입력하면 실제 사냥 딜 비중을 자동으로 반영합니다.<br>
     <b style="color:var(--warn)">※ 측정 딜량은 절대 데미지 계산에 다시 사용하지 않고, 스킬별 딜 비중을 구하는 용도로만 사용합니다.</b>
   </div>
   <div id="skillMixRows">
-    ${[1,2,3,4,5].map(i => `<div class="skill-mix-row"><div><label>스킬 ${i} 프리셋</label><select id="advSkillPreset${i}"></select></div><div><label>1타당 스킬 데미지 (%)</label><input id="advSkillPct${i}" type="number" min="0" step="1" placeholder="예: 420"></div><div><label>실전 측정 딜량</label><input id="advSkillDamage${i}" type="number" min="0" step="any" placeholder="DPS 또는 누적 딜"></div></div>`).join('')}
+    ${[1,2,3,4,5].map(i => `<div class="skill-mix-row" id="advSkillRow${i}"${i>1?' style="display:none"':''}><div><label>스킬 ${i} 프리셋</label><select id="advSkillPreset${i}"></select></div><div><label>1타당 스킬 데미지 (%)</label><input id="advSkillPct${i}" type="number" min="0" step="1" placeholder="예: 420"></div><div><label>실전 측정 딜량</label><input id="advSkillDamage${i}" type="number" min="0" step="any" placeholder="DPS 또는 누적 딜"></div></div>`).join('')}
   </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button type="button" id="addSkillRowBtn">+ 스킬 추가</button><button type="button" id="removeSkillRowBtn" style="display:none">− 마지막 스킬 제거</button></div>
   <div class="metric" style="margin-top:12px"><span class="small">입력된 스킬 딜 비중</span><b id="skillMixPreview">-</b><span class="small">딜량 단위는 자유입니다. 같은 측정 기준의 숫자라면 비율로 자동 환산됩니다.</span></div>
 </section>`;
 
-const CRIT_HELPERS = `const huntingSkillPresets={"팔라딘":["차지블로우","생츄어리"],"히어로":["브랜디쉬"],"다크나이트":["스피어 버스터"],"아란 (풀콤보 기준)":["더블스윙","트리플스윙","파이널블로우","콤보템페스트"],"캡틴":["토르페도","캐논"],"바이퍼":["드래곤 스트라이크"],"신궁":["피어싱","스나이핑","스트레이프"],"보우마스터":["폭풍의시"],"섀도어":["부메랑스텝"],"나이트로드":["트리플스로우"],"불독":["페럴라이즈","메테오"],"썬콜":["체인라이트닝","블리자드"],"비숍":["제네시스","엔젤레이"],"에반":["플레임 휠","다크포그"]};function currentSkillPreset(){return huntingSkillPresets[job.value]||[]}function fillSkillSelect(el,includeDirect=true){if(!el)return;const prev=el.value;const list=currentSkillPreset();el.innerHTML='';list.forEach(name=>el.add(new Option(name,name)));if(includeDirect)el.add(new Option('직접 입력','__custom__'));if(prev&&Array.from(el.options).some(o=>o.value===prev))el.value=prev}function syncSkillPresets(){for(let i=1;i<=5;i++)fillSkillSelect(document.getElementById('advSkillPreset'+i));updateSkillMixPreview()}function skillMixData(){const rows=[];for(let i=1;i<=5;i++){const pct=n('advSkillPct'+i),damage=n('advSkillDamage'+i);const preset=document.getElementById('advSkillPreset'+i);const name=preset&&preset.value&&preset.value!=='__custom__'?preset.value:('스킬 '+i);if(pct>0&&damage>0)rows.push({name,pct,damage})}const total=rows.reduce((s,r)=>s+r.damage,0);return total>0?rows.map(r=>({...r,weight:r.damage/total})):[]}function critRelativeMultiplier(appliedCrit,baseAppliedCrit,critBonus){const c=Math.max(0,Math.min(100,appliedCrit))/100,c0=Math.max(0,Math.min(100,baseAppliedCrit))/100;if(calcMode==='advanced'){const rows=skillMixData();if(rows.length){return rows.reduce((sum,r)=>{const base=r.pct+c0*critBonus;if(base<=0)return sum;return sum+r.weight*((r.pct+c*critBonus)/base)},0)}}const pct=Math.max(1,n('simpleSkillPct')||420);return (pct+c*critBonus)/(pct+c0*critBonus)}function updateSkillMixPreview(){const el=document.getElementById('skillMixPreview');if(!el)return;const rows=skillMixData();el.innerHTML=rows.length?rows.map(r=>\`${'${'}r.name} ${'${'}(r.weight*100).toFixed(1)}%\`).join(' · '):'-'};`;
+const CRIT_HELPERS = `const huntingSkillPresets={"팔라딘":["차지블로우","생츄어리"],"히어로":["브랜디쉬"],"다크나이트":["스피어 버스터"],"아란 (풀콤보 기준)":["더블스윙","트리플스윙","파이널블로우","콤보템페스트"],"캡틴":["토르페도","캐논"],"바이퍼":["드래곤 스트라이크"],"신궁":["피어싱","스나이핑","스트레이프"],"보우마스터":["폭풍의시"],"섀도어":["부메랑스텝"],"나이트로드":["트리플스로우"],"불독":["페럴라이즈","메테오"],"썬콜":["체인라이트닝","블리자드"],"비숍":["제네시스","엔젤레이"],"에반":["플레임 휠","다크포그"]};let visibleSkillRows=1;function currentSkillPreset(){return huntingSkillPresets[job.value]||[]}function fillSkillSelect(el,rowIndex=1,includeDirect=true){if(!el)return;const prev=el.value;const list=currentSkillPreset();el.innerHTML='';list.forEach(name=>el.add(new Option(name,name)));if(includeDirect)el.add(new Option('직접 입력','__custom__'));if(prev&&Array.from(el.options).some(o=>o.value===prev))el.value=prev;else if(list.length)el.value=list[Math.min(rowIndex-1,list.length-1)]}function updateSkillRowControls(){for(let i=1;i<=5;i++){const row=document.getElementById('advSkillRow'+i);if(row)row.style.display=i<=visibleSkillRows?'grid':'none'}const add=document.getElementById('addSkillRowBtn'),remove=document.getElementById('removeSkillRowBtn');if(add)add.style.display=visibleSkillRows<5?'inline-block':'none';if(remove)remove.style.display=visibleSkillRows>1?'inline-block':'none'}function inferSkillRows(){let used=1;for(let i=2;i<=5;i++){if(n('advSkillPct'+i)>0||n('advSkillDamage'+i)>0)used=i}visibleSkillRows=used;updateSkillRowControls()}function syncSkillPresets(){for(let i=1;i<=5;i++)fillSkillSelect(document.getElementById('advSkillPreset'+i),i);inferSkillRows();updateSkillMixPreview()}function skillMixData(){const rows=[];for(let i=1;i<=5;i++){const pct=n('advSkillPct'+i),damage=n('advSkillDamage'+i);const preset=document.getElementById('advSkillPreset'+i);const name=preset&&preset.value&&preset.value!=='__custom__'?preset.value:('스킬 '+i);if(pct>0&&damage>0)rows.push({name,pct,damage})}const total=rows.reduce((s,r)=>s+r.damage,0);return total>0?rows.map(r=>({...r,weight:r.damage/total})):[]}function critRelativeMultiplier(appliedCrit,baseAppliedCrit,critBonus){const c=Math.max(0,Math.min(100,appliedCrit))/100,c0=Math.max(0,Math.min(100,baseAppliedCrit))/100;if(calcMode==='advanced'){const rows=skillMixData();if(rows.length){return rows.reduce((sum,r)=>{const base=r.pct+c0*critBonus;if(base<=0)return sum;return sum+r.weight*((r.pct+c*critBonus)/base)},0)}}const pct=Math.max(1,n('simpleSkillPct')||420);return (pct+c*critBonus)/(pct+c0*critBonus)}function updateSkillMixPreview(){const el=document.getElementById('skillMixPreview');if(!el)return;const rows=skillMixData();el.innerHTML=rows.length?rows.map(r=>\`${'${'}r.name} ${'${'}(r.weight*100).toFixed(1)}%\`).join(' · '):'-'};`;
 
 export default {
   async fetch(request, env) {
@@ -228,7 +231,7 @@ export default {
 
     html = html.replace(
       "document.addEventListener('input',e=>{if(e.target.matches('input,select'))savePreset()});",
-      "document.addEventListener('input',e=>{if(e.target.matches('input,select'))savePreset();if(e.target.id&&e.target.id.startsWith('advSkill'))updateSkillMixPreview()});"
+      "document.addEventListener('input',e=>{if(e.target.matches('input,select'))savePreset();if(e.target.id&&e.target.id.startsWith('advSkill'))updateSkillMixPreview()});document.addEventListener('click',e=>{if(e.target.id==='addSkillRowBtn'){visibleSkillRows=Math.min(5,visibleSkillRows+1);updateSkillRowControls()}if(e.target.id==='removeSkillRowBtn'&&visibleSkillRows>1){const i=visibleSkillRows;const pct=document.getElementById('advSkillPct'+i),damage=document.getElementById('advSkillDamage'+i);if(pct)pct.value='';if(damage)damage.value='';visibleSkillRows--;updateSkillRowControls();updateSkillMixPreview();savePreset()}});"
     );
 
     html = html.replace(
