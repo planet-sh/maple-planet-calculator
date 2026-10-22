@@ -50,6 +50,10 @@ const SUPPORT_HTML = `
         <div class="small" style="margin-top:8px;line-height:1.7">아닙니다. 장비 후보 간 상대 효율을 비교하기 위한 도구이며, 직업별 스킬 구조·타수·몬스터 조건 등 실제 전투 요소에 따라 차이가 날 수 있습니다.</div>
       </details>
       <details class="details">
+        <summary>올스탯% 잠재는 어떻게 계산하나요?</summary>
+        <div class="small" style="margin-top:8px;line-height:1.7">올스탯% 잠재는 현재 계산에서 <b>동일 수치의 주스탯%</b>로 환산합니다. 부스탯 상승분은 반영하지 않습니다.</div>
+      </details>
+      <details class="details">
         <summary>계산식이나 스킬 수치가 틀린 것 같아요.</summary>
         <div class="small" style="margin-top:8px;line-height:1.7">오류 제보에 근거 자료와 함께 남겨주세요. 확인 후 dev Preview에서 먼저 검증하고 production에 반영합니다.</div>
       </details>
@@ -81,10 +85,10 @@ export default {
       );
     }
 
-    if (!html.includes('올스탯%가 포함된 장비는 현재 실측에서 올스탯% 효과를 무시합니다.')) {
+    if (!html.includes('올스탯% 잠재는 현재 계산에서 <b>동일 수치의 주스탯%</b>로 환산')) {
       html = html.replace(
         '※ 3번과 4번 측정도 가능한 한 같은 장비·버프·스킬 조건을 유지해주세요.</b>',
-        '※ 3번과 4번 측정도 가능한 한 같은 장비·버프·스킬 조건을 유지해주세요.<br>※ 올스탯%가 포함된 장비는 현재 실측에서 <b>올스탯% 효과를 무시</b>합니다.</b>'
+        '※ 3번과 4번 측정도 가능한 한 같은 장비·버프·스킬 조건을 유지해주세요.<br>※ 올스탯% 잠재는 현재 계산에서 <b>동일 수치의 주스탯%</b>로 환산하며, <b>부스탯 상승분은 반영하지 않습니다.</b></b>'
       );
     }
 
