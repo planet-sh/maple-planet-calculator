@@ -39,8 +39,28 @@ function patchBossReco(html){
   );
 
   html=html.replace(
+`  function combos(){const p=potentialPools(),out=[];p.first.forEach(a=>p.lower.forEach((b,bi)=>p.lower.slice(bi).forEach(c=>out.push([a,b,c]))));return out}`,
+`  function combos(){
+    const p=potentialPools(),out=[];
+    const lowerNormal=p.lower.map(x=>[...x,false]);
+    const lowerOff=p.first.map(x=>[...x,true]);
+    const lowerAll=[...lowerNormal,...lowerOff];
+    p.first.forEach(a=>{
+      lowerAll.forEach((b,bi)=>{
+        lowerAll.slice(bi).forEach(c=>{
+          const offCount=(b[3]?1:0)+(c[3]?1:0);
+          if(offCount>1)return;
+          out.push([a,b.slice(0,3),c.slice(0,3)]);
+        });
+      });
+    });
+    return out;
+  }`
+  );
+
+  html=html.replace(
 `    q('recoWeaponNote').textContent='기본값: '+d.base+' + 작/성장 '+d.upgrade+' · 추천 잠재 등급 1줄 공'+p.firstFlat+' / 2·3줄 공'+p.lowerFlat+(p.innateBoss?' · 고유 보공 +20% (일반 필드 미적용)':'')+' · 위 캐릭터/장비 입력칸에서 직접 수정 가능';`,
-`    q('recoWeaponNote').textContent='기본값: '+d.base+' + 작/성장 '+d.upgrade+' · 추천 잠재 등급 1줄 공'+p.firstFlat+' / 2·3줄 공'+p.lowerFlat+(p.innateBoss?' · 고유 보공 +20%':'')+(bossFieldActive()?' · 현재 보공 적용 필드: 보30/보20 후보 포함, 보공+총뎀 합연산':' · 일반 필드: 보공 후보 제외')+' · 위 캐릭터/장비 입력칸에서 직접 수정 가능';`
+`    q('recoWeaponNote').textContent='기본값: '+d.base+' + 작/성장 '+d.upgrade+' · 추천 잠재 등급 1줄 공'+p.firstFlat+' / 2·3줄 공'+p.lowerFlat+(p.innateBoss?' · 고유 보공 +20%':'')+(bossFieldActive()?' · 현재 보공 적용 필드: 보30/보20 후보 포함, 보공+총뎀 합연산':' · 일반 필드: 보공 후보 제외')+' · 이탈 옵션은 2·3줄 중 최대 1줄까지만 추천 후보에 포함 · 위 캐릭터/장비 입력칸에서 직접 수정 가능';`
   );
 
   html=html.replace(
@@ -49,7 +69,7 @@ function patchBossReco(html){
   ['fieldMode','guildBossToggle'].forEach(id=>{q(id)?.addEventListener('change',render);q(id)?.addEventListener('input',render)});`
   );
 
-  html=html.replace('</body>',`<script>(()=>{const q=id=>document.getElementById(id);function sync(){const rating=q('fieldMode')?.value==='rating';const base=q('recoBaseTop')?.previousElementSibling;const measured=q('recoMeasuredTop')?.parentElement?.querySelector('h3');if(base)base.textContent=rating?'기본 추천 TOP 3 · 보공 적용':'기본 추천 TOP 3';if(measured)measured.textContent=rating?'내 실측 기준 TOP 3 · 보공 적용':'내 실측 기준 TOP 3'}q('fieldMode')?.addEventListener('change',()=>requestAnimationFrame(sync));sync()})();</script></body>`);
+  html=html.replace('</body>',`<script>(()=>{const q=id=>document.getElementById(id);function sync(){const rating=q('fieldMode')?.value==='rating';const base=q('recoBaseTop')?.previousElementSibling;const measured=q('recoMeasuredTop')?.parentElement?.querySelector('h3');if(base)base.textContent=rating?'실전 추천 TOP 3 · 보공 적용':'실전 추천 TOP 3';if(measured)measured.textContent=rating?'내 실측 기준 TOP 3 · 보공 적용':'내 실측 기준 TOP 3';let note=q('recoOffTierRule');if(!note&&q('recoBaseTop')){note=document.createElement('div');note.id='recoOffTierRule';note.className='small';note.style.marginTop='8px';q('recoBaseTop').parentElement.appendChild(note)}if(note)note.innerHTML='※ 실제 획득 난이도를 고려해 <b>2·3줄 이탈 옵션은 최대 1줄까지만</b> 추천에 포함합니다. 이탈 2줄 이상 조합은 성능이 높아도 TOP3에서 제외합니다.'}q('fieldMode')?.addEventListener('change',()=>requestAnimationFrame(sync));sync()})();</script></body>`);
   return html;
 }
 
