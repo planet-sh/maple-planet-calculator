@@ -41,7 +41,7 @@ function patchBossReco(html){
   html=html.replace(
 `  function combos(){const p=potentialPools(),out=[];p.first.forEach(a=>p.lower.forEach((b,bi)=>p.lower.slice(bi).forEach(c=>out.push([a,b,c]))));return out}`,
 `  function combos(mode='normal'){
-    const p=potentialPools(mode),out=[];
+    const p=potentialPools(mode),out=[],seen=new Set();
     const lowerNormal=p.lower.map(x=>[...x,false]);
     const lowerOff=p.first.map(x=>[...x,true]);
     const lowerAll=[...lowerNormal,...lowerOff];
@@ -53,6 +53,9 @@ function patchBossReco(html){
           const lines=[a,b.slice(0,3),c.slice(0,3)];
           const bossTotal=lines.reduce((sum,x)=>sum+(x[1]==='boss'?x[2]:0),0);
           if(mode==='boss'&&bossTotal>70)return;
+          const key=lines.map(x=>x[1]+':'+x[2]).sort().join('|');
+          if(seen.has(key))return;
+          seen.add(key);
           out.push(lines);
         });
       });
