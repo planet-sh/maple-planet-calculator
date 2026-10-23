@@ -133,6 +133,13 @@ const WEAPON_V22_UI_SCRIPT = `
     });
   }
 
+  function removeLegacyUpdateBlock(){
+    const heading=Array.from(document.querySelectorAll('h2,h3')).find(el=>(el.textContent||'').replace(/\\s+/g,' ').trim()==='업데이트 · 문의');
+    if(!heading)return;
+    const block=heading.closest('section.card')||heading.parentElement;
+    if(block&&!block.closest('#releaseHistory'))block.remove();
+  }
+
   function normalizeReleaseHistory(){
     const history=q('releaseHistory');if(!history)return;
     const summary=history.querySelector(':scope>summary');
@@ -148,8 +155,19 @@ const WEAPON_V22_UI_SCRIPT = `
       +'<div class="release-version"><b>V1.0~V1.3 · 초기 버전</b><div class="small">사냥용 무기 잠재 효율 비교 계산기 기반 구축. 공%/깡공/총데미지/크리티컬 확률/주스탯 잠재 비교, 직업별 크리 프리셋, 정수 입력 UI와 라이트/다크 테마, 기본 프리셋 저장 기능을 순차 추가.</div></div>';
   }
 
+  function moveReleaseHistoryToBottom(){
+    const history=q('releaseHistory');
+    const main=document.querySelector('main');
+    if(!history||!main)return;
+    const footer=main.querySelector('footer');
+    if(footer)footer.parentNode.insertBefore(history,footer);
+    else main.appendChild(history);
+  }
+
   annotateBossOptions();
+  removeLegacyUpdateBlock();
   normalizeReleaseHistory();
+  moveReleaseHistoryToBottom();
   syncAutoTotalDamage();
   updateBossNotes();
 
@@ -182,11 +200,11 @@ function commonNav(kind){
 function normalizeShell(kind,html){
   if(!html.includes('id="v22CommonShellStyle"'))html=html.replace('</head>',COMMON_SHELL_STYLE+'</head>');
   const nav=commonNav(kind);
-  const legacyNav=/<nav[^>]*class="[^"]*(?:tool-nav|topnav)[^"]*"[^>]*>[\s\S]*?<\/nav>/i;
+  const legacyNav=/<nav[^>]*class="[^"]*(?:tool-nav|topnav)[^"]*"[^>]*>[\\s\\S]*?<\\/nav>/i;
   if(legacyNav.test(html))html=html.replace(legacyNav,nav);
   else html=html.replace(/<main([^>]*)>/i,m=>m+nav);
   if(kind==='weapon'){
-    html=html.replace(/메이플 플래닛 계산기 <span class="tag">V[^<]+<\/span>/,'메이플 플래닛 계산기 <span class="tag">V2.2</span>');
+    html=html.replace(/메이플 플래닛 계산기 <span class="tag">V[^<]+<\\/span>/,'메이플 플래닛 계산기 <span class="tag">V2.2</span>');
     if(!html.includes('id="v22WeaponFlowScript"'))html=html.replace('</body>',WEAPON_FLOW_SCRIPT+'</body>');
     if(!html.includes('id="v22WeaponUiScript"'))html=html.replace('</body>',WEAPON_V22_UI_SCRIPT+'</body>');
   }
