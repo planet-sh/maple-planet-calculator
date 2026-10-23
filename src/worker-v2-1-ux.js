@@ -17,6 +17,24 @@ label{font-weight:700;color:var(--text)!important}.small{line-height:1.65}.metri
 .reco-field-box{background:color-mix(in srgb,var(--panel2) 88%,var(--bg))!important}.reco-rank b{letter-spacing:-.02em}
 #modeDesc{padding:9px 12px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);margin-top:10px}
 .calc-section-kicker{font-size:11px;font-weight:900;letter-spacing:.08em;color:var(--accent);text-transform:uppercase;margin-bottom:4px}
+
+/* Desktop / ultrawide workspace */
+@media(min-width:1180px){
+  main{max-width:1540px!important;padding-left:28px!important;padding-right:28px!important}
+  .desktop-input-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start;margin:14px 0 18px}
+  .desktop-input-grid>.card{margin:0;height:100%}
+  .desktop-input-grid>.card .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .desktop-input-grid>.advanced-only{align-self:stretch}
+  .common-recommend-card{margin-top:18px!important}
+  .reco-dual-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .weapons{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(min-width:1680px){
+  main{max-width:1680px!important}
+  .desktop-input-grid{gap:20px}
+  .card{padding:20px}
+}
+@media(max-width:1179px){.desktop-input-grid{display:block}.desktop-input-grid>.card{margin:14px 0}}
 @media(max-width:720px){.calc-purpose-head{display:block}.calc-purpose-head .small{text-align:left;margin-top:6px}.purpose-switch{grid-template-columns:1fr}.mode-switch{grid-template-columns:1fr 1fr!important}}
 </style>`;
 
@@ -78,6 +96,18 @@ const UX_SCRIPT = `
   const desc=q('modeDesc');
   function updateModeCopy(){if(!desc)return;desc.innerHTML=advanced.classList.contains('active')?'<b>심화 계산</b> · 공1·주스탯 실측과 실전 스킬 비중까지 반영하는 정밀 비교입니다.':'<b>일반 계산</b> · 직업 프리셋과 대표 주력기 기준으로 대부분의 실매물을 빠르게 비교합니다.'}
   simple.addEventListener('click',()=>requestAnimationFrame(updateModeCopy));advanced.addEventListener('click',()=>requestAnimationFrame(updateModeCopy));updateModeCopy();
+
+  // 대형 화면에서는 입력 카드만 2열 워크스페이스로 묶고, 추천/매물/결과는 전체 너비를 유지한다.
+  function cardByTitle(prefix){return Array.from(document.querySelectorAll('main>section.card')).find(s=>(s.querySelector(':scope>h2')?.textContent||'').trim().startsWith(prefix))}
+  const characterCard=cardByTitle('1. 캐릭터 / 장비');
+  const atkCard=cardByTitle('2. 공1당 스공 효율 측정');
+  const statCard=q('statCalSection');
+  const pctCard=q('pctCalSection');
+  if(characterCard&&atkCard&&!q('desktopInputGrid')){
+    const grid=document.createElement('div');grid.id='desktopInputGrid';grid.className='desktop-input-grid';
+    characterCard.parentNode.insertBefore(grid,characterCard);
+    [characterCard,atkCard,statCard,pctCard].filter(Boolean).forEach(card=>grid.appendChild(card));
+  }
 })();
 </script>`;
 
