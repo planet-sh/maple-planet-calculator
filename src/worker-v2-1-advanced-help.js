@@ -1,4 +1,4 @@
-import app from './worker-v2-1-ux.js';
+import app from './worker-v2-1-mode-guard.js';
 
 const STYLE = `
 <style>
