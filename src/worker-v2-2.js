@@ -67,6 +67,7 @@ const WEAPON_V22_UI_SCRIPT = `
 <script id="v22WeaponUiScript">
 (()=>{
   const q=id=>document.getElementById(id);
+  const weaponIds=['cur','a','b','c'];
 
   function annotateBossOptions(){
     document.querySelectorAll('select option').forEach(o=>{
@@ -79,6 +80,35 @@ const WEAPON_V22_UI_SCRIPT = `
     const text=(select?.selectedOptions?.[0]?.textContent||'');
     const m=text.match(/보스 공격력 \\+(\\d+)%/);
     return m?Number(m[1]):0;
+  }
+
+  function totalDamageFromSelect(select){
+    const text=(select?.selectedOptions?.[0]?.textContent||'');
+    const m=text.match(/총데미지 \\+(\\d+)%/);
+    return m?Number(m[1]):0;
+  }
+
+  function syncAutoTotalDamage(){
+    weaponIds.forEach(id=>{
+      const input=q(id+'Dmg');
+      if(!input)return;
+      let total=0;
+      for(let k=1;k<=3;k++)total+=totalDamageFromSelect(q(id+'O'+k));
+      const next=String(total);
+      if(input.value!==next){
+        input.value=next;
+        input.dispatchEvent(new Event('input',{bubbles:true}));
+      }
+      input.type='hidden';
+      const label=input.previousElementSibling;
+      if(label&&label.tagName==='LABEL'&&(label.textContent||'').includes('총데미지'))label.style.display='none';
+    });
+
+    const card=q('weaponSectionTitle')?.closest('section.card');
+    if(card){
+      const note=Array.from(card.querySelectorAll(':scope>.small')).find(el=>(el.textContent||'').includes('총데미지는 각 무기를 착용했을 때'));
+      if(note)note.innerHTML='총데미지는 <b>무기 잠재에서 선택한 총데미지 +6% / +9%</b>를 자동 합산해 반영합니다. 별도 입력은 필요하지 않습니다.<br>※ <b>무기 순수 공격력을 입력하지 않은 매물은 계산 결과에서 제외</b>됩니다. 가격은 억 메소 단위이며 현재 무기는 가격을 입력하지 않습니다.';
+    }
   }
 
   function bossApplies(){
@@ -110,7 +140,7 @@ const WEAPON_V22_UI_SCRIPT = `
     let body=history.querySelector('.release-history-body');
     if(!body){body=document.createElement('div');body.className='release-history-body';history.appendChild(body)}
     body.innerHTML=''
-      +'<div class="release-version"><b>V2.2 · 2026-10-24</b><div class="small">구조 리팩터링. V2.2 단일 엔트리 도입, 직업/스킬 프리셋 기준 파일과 회귀검사 추가, 환산스공·무기 계산기·공대장 계산기 공통 네비/PC 폭 통일. 일반/심화 계산 서순 재정리, 입력 도움말 툴팁과 심화 실측 도움말 보강, 업데이트 내역을 V2.2 기준으로 통합 관리.</div></div>'
+      +'<div class="release-version"><b>V2.2 · 2026-10-24</b><div class="small">구조 리팩터링. V2.2 단일 엔트리 도입, 직업/스킬 프리셋 기준 파일과 회귀검사 추가, 환산스공·무기 계산기·공대장 계산기 공통 네비/PC 폭 통일. 일반/심화 계산 서순 재정리, 입력 도움말 툴팁과 심화 실측 도움말 보강, 업데이트 내역을 V2.2 기준으로 통합 관리. 무기 잠재의 총데미지는 선택값을 자동 합산하도록 단순화.</div></div>'
       +'<div class="release-version"><b>V2.1 · 2026-10-23~24</b><div class="small">직업별 무기 잠재 추천 TOP3 추가. 일반 필드/보공 적용 몬스터 추천 분리, 보공 잠재 합계 최대 70 및 2·3줄 이탈 옵션 최대 1줄 규칙 반영. 공% 계산에서 버프 공격력을 분리하고 영웅의 메아리와 잠재 공% 합산 로직 보정. 아란 기본공격/더블 스윙/트리플 스윙 실측 DPS 비중 반영. 초간단 모드 제거 및 입력 중심 UI·울트라와이드 레이아웃 정리.</div></div>'
       +'<div class="release-version"><b>V2.0 · 2026-10-23</b><div class="small">사자왕의 성 레이팅 필드 지원. 사냥터별 권장 레이팅/현재 달성률/피해 배율, 다음 피해배율 커트라인과 목표 레이팅 도달 예상일 계산 추가. 보스 공격력 +20%/+30% 잠재, 길드 보공 +5%, 뿌리기 공 +20, 영웅의 메아리 공 +4% 설정 추가.</div></div>'
       +'<div class="release-version"><b>V1.8 · 2026-10-22</b><div class="small">일반/심화 계산 분리. 대표 주력기 1타당 스킬 데미지% 기준 크리티컬 기대값 계산, 실전 스킬 비중/DPS 반영 기능 추가. 주스탯1·주스탯1% 실측 계산 도입. 노크리 직업 크확 계산 보정 및 나이트로드/궁수 샤프아이즈 패시브 수치 정정.</div></div>'
@@ -120,8 +150,14 @@ const WEAPON_V22_UI_SCRIPT = `
 
   annotateBossOptions();
   normalizeReleaseHistory();
+  syncAutoTotalDamage();
   updateBossNotes();
-  document.addEventListener('change',()=>requestAnimationFrame(updateBossNotes),true);
+
+  document.addEventListener('change',e=>{
+    if(e.target.matches('.weapon select'))syncAutoTotalDamage();
+    requestAnimationFrame(updateBossNotes);
+  },true);
+  q('calc')?.addEventListener('click',syncAutoTotalDamage,true);
   document.querySelectorAll('.purpose-btn').forEach(b=>b.addEventListener('click',()=>requestAnimationFrame(updateBossNotes)));
   new MutationObserver(()=>requestAnimationFrame(updateBossNotes)).observe(document.body,{attributes:true,attributeFilter:['data-combat-purpose']});
 })();
