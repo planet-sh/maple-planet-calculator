@@ -29,13 +29,11 @@ const UX_SCRIPT = `
   const env=q('huntingEnvironment'),field=q('fieldMode');
   if(!modeSwitch||!simple||!advanced||!env||!field)return;
 
-  // 초간단 제거: 이전 저장값이 quick이면 일반 계산으로 복귀
   quick?.remove();
   q('quickCompareSection')?.remove();
   if(document.body.dataset.calcMode==='quick'||(!simple.classList.contains('active')&&!advanced.classList.contains('active'))){simple.click()}
   simple.textContent='일반 계산';advanced.textContent='심화 계산';
 
-  // 보스 전용 상태 추가. 레이팅과 달리 보공만 적용하고 레이팅 UI/배율은 사용하지 않는다.
   if(!Array.from(field.options).some(o=>o.value==='boss')){
     const o=document.createElement('option');o.value='boss';o.textContent='보스';field.appendChild(o);
   }
@@ -47,13 +45,11 @@ const UX_SCRIPT = `
   const modeTitle=document.createElement('div');modeTitle.innerHTML='<div class="calc-section-kicker" style="margin-top:14px">STEP 2</div><div style="font-weight:850;margin-bottom:7px">계산 정밀도</div>';
   modeSwitch.parentNode.insertBefore(modeTitle,modeSwitch);
 
-  // 사자왕의 성 레이팅은 사냥용의 부가 옵션으로 격리
   const details=document.createElement('details');details.className='castle-extra';details.id='castleExtra';
   const summary=document.createElement('summary');summary.innerHTML='사자왕의 성벽 레이팅 추가 설정 <span class="small" style="font-weight:500">· 필요할 때만 펼치기</span>';
   const body=document.createElement('div');body.className='castle-extra-body';
   env.parentNode.insertBefore(details,env);details.appendChild(summary);details.appendChild(body);body.appendChild(env);
 
-  // 기존 사냥 환경 셀렉트는 성벽 추가설정 안에서 일반/레이팅만 보여준다.
   const normalOpt=Array.from(field.options).find(o=>o.value==='normal');if(normalOpt)normalOpt.textContent='일반 사냥 · 레이팅 미적용';
   const ratingOpt=Array.from(field.options).find(o=>o.value==='rating');if(ratingOpt)ratingOpt.textContent='사자왕의 성벽 · 레이팅/보공 적용';
   const bossOpt=Array.from(field.options).find(o=>o.value==='boss');if(bossOpt)bossOpt.hidden=true;
@@ -86,9 +82,8 @@ const UX_SCRIPT = `
 </script>`;
 
 function patchUx(html){
-  // 실제 매물 계산에서 boss 모드는 rating과 동일하게 보공 잠재를 적용하되 레이팅 UI는 활성화하지 않는다.
   html=html.replace("const ratingBoss=document.getElementById('fieldMode')?.value==='rating';", "const fieldModeValue=document.getElementById('fieldMode')?.value;const ratingBoss=fieldModeValue==='rating'||fieldModeValue==='boss';");
-  html=html.replace('</style>',UX_STYLE+'</style>');
+  html=html.replace('</head>',UX_STYLE+'</head>');
   html=html.replace('</body>',UX_SCRIPT+'</body>');
   return html;
 }
