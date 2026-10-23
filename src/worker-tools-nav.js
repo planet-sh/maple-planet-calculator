@@ -8,13 +8,24 @@ const TOOL_NAV_STYLE = `
 </style>`;
 
 const TOOL_NAV = `<nav class="tool-nav" id="toolNav"><a class="active" href="/">무기 계산기</a><a href="/captain.html">공대장 계산기</a></nav>`;
+const CAPTAIN_SPLIT_SCRIPT = `<script src="/captain-split.js" defer></script>`;
 
 export default {
   async fetch(request, env, ctx) {
     const response = await app.fetch(request, env, ctx);
     const url = new URL(request.url);
-    if (url.pathname !== '/' && url.pathname !== '/index.html') return response;
     const contentType = response.headers.get('content-type') || '';
+
+    if (url.pathname === '/captain.html' && contentType.includes('text/html')) {
+      let html = await response.text();
+      if (!html.includes('/captain-split.js')) html = html.replace('</body>', CAPTAIN_SPLIT_SCRIPT + '</body>');
+      const headers = new Headers(response.headers);
+      headers.delete('content-length');
+      headers.delete('etag');
+      return new Response(html, {status: response.status, statusText: response.statusText, headers});
+    }
+
+    if (url.pathname !== '/' && url.pathname !== '/index.html') return response;
     if (!contentType.includes('text/html')) return response;
 
     let html = await response.text();
