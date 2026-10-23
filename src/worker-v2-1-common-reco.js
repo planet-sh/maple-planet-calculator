@@ -9,12 +9,10 @@ const COMMON_RECO_SCRIPT = `
   const modeSwitch=document.querySelector('.mode-switch');
   if(!card||!job||!modeSwitch)return;
 
-  // 모드 선택 바로 아래에 공통 추천 영역 배치
   const modeCard=modeSwitch.closest('section.card');
   if(modeCard&&card.previousElementSibling!==modeCard)modeCard.insertAdjacentElement('afterend',card);
   card.classList.add('common-recommend-card');
 
-  // 초간단에서도 직업을 바로 고를 수 있도록 공통 직업 선택 추가
   if(!q('recoCommonJob')){
     const wrap=document.createElement('div');
     wrap.id='recoCommonJobWrap';
@@ -29,8 +27,9 @@ const COMMON_RECO_SCRIPT = `
   function syncJobOptions(){
     if(!commonJob)return;
     const current=job.value;
-    commonJob.innerHTML=Array.from(job.options).map(o=>'<option value="'+o.value.replace(/"/g,'&quot;')+'">'+o.textContent+'</option>').join('');
-    commonJob.value=current;
+    const html=Array.from(job.options).map(o=>'<option value="'+o.value.replace(/"/g,'&quot;')+'">'+o.textContent+'</option>').join('');
+    if(commonJob.innerHTML!==html)commonJob.innerHTML=html;
+    if(commonJob.value!==current)commonJob.value=current;
   }
   syncJobOptions();
 
@@ -39,9 +38,8 @@ const COMMON_RECO_SCRIPT = `
     job.value=commonJob.value;
     job.dispatchEvent(new Event('change',{bubbles:true}));
   });
-  job.addEventListener('change',()=>{if(commonJob)commonJob.value=job.value});
+  job.addEventListener('change',()=>{if(commonJob&&commonJob.value!==job.value)commonJob.value=job.value});
 
-  // 저/중/고스펙 흐름을 한눈에 읽히게 3칸 요약으로 보조 표시
   if(!q('recoTierFlow')){
     const flow=q('recoFlow');
     if(flow){
@@ -49,25 +47,40 @@ const COMMON_RECO_SCRIPT = `
       tier.id='recoTierFlow';
       tier.className='reco-tier-flow';
       flow.insertAdjacentElement('afterend',tier);
+      let paintRaf=0;
+      let lastText='';
       const paint=()=>{
-        const parts=(flow.textContent||'').split(' · ').filter(Boolean);
-        tier.innerHTML=parts.map(x=>{
-          const m=x.match(/^(저스펙|중스펙|고스펙):\s*(.*)$/);
+        paintRaf=0;
+        const text=flow.textContent||'';
+        if(text===lastText)return;
+        lastText=text;
+        const parts=text.split(' · ').filter(Boolean);
+        const html=parts.map(x=>{
+          const m=x.match(/^(저스펙|중스펙|고스펙):\\s*(.*)$/);
           return m?'<div class="metric"><span class="small">'+m[1]+'</span><b>'+m[2]+'</b></div>':'';
         }).join('');
+        if(tier.innerHTML!==html)tier.innerHTML=html;
       };
-      const obs=new MutationObserver(paint);obs.observe(flow,{childList:true,characterData:true,subtree:true});paint();
+      const schedulePaint=()=>{
+        if(paintRaf)return;
+        paintRaf=requestAnimationFrame(paint);
+      };
+      const obs=new MutationObserver(schedulePaint);
+      obs.observe(flow,{childList:true,characterData:true,subtree:true});
+      paint();
     }
   }
 
-  // 초간단에서는 일반/심화 실측값을 전제로 하는 영역을 숨김
   const breakpointDetails=Array.from(card.querySelectorAll('details')).find(d=>(d.querySelector('summary')?.textContent||'').includes('잠재 역전표'));
+  let lastQuick=null;
   function syncQuickRecoUi(){
     const quick=q('quickMode')?.classList.contains('active')||document.body.dataset.calcMode==='quick';
+    if(quick===lastQuick)return;
+    lastQuick=quick;
     if(breakpointDetails)breakpointDetails.style.display=quick?'none':'';
   }
-  ['quickMode','simpleMode','advancedMode'].forEach(id=>q(id)?.addEventListener('click',()=>setTimeout(syncQuickRecoUi,0)));
-  const bodyObs=new MutationObserver(syncQuickRecoUi);bodyObs.observe(document.body,{attributes:true,attributeFilter:['data-calc-mode']});
+  const bodyObs=new MutationObserver(syncQuickRecoUi);
+  bodyObs.observe(document.body,{attributes:true,attributeFilter:['data-calc-mode']});
   syncQuickRecoUi();
 })();
 </script>`;
