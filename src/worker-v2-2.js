@@ -16,6 +16,47 @@ const COMMON_SHELL_STYLE = `
 @media(max-width:720px){.v22-tool-nav a{font-size:13px;padding:11px 4px}}
 </style>`;
 
+const WEAPON_FLOW_SCRIPT = `
+<script id="v22WeaponFlowScript">
+(()=>{
+  const q=id=>document.getElementById(id);
+  const inputGrid=q('desktopInputGrid');
+  const advancedGrid=q('desktopAdvancedGrid');
+  const skillMix=q('skillMixSection');
+  const weaponCard=q('weaponSectionTitle')?.closest('section.card');
+  const calc=q('calc');
+  if(!inputGrid||!weaponCard||!calc)return;
+
+  function placeAfter(anchor,node){
+    if(!anchor||!node||anchor===node)return anchor;
+    anchor.insertAdjacentElement('afterend',node);
+    return node;
+  }
+
+  function normalizeFlow(){
+    const advanced=document.body.dataset.calcMode==='advanced';
+    let anchor=inputGrid;
+
+    if(advanced){
+      if(advancedGrid)anchor=placeAfter(anchor,advancedGrid);
+      if(skillMix)anchor=placeAfter(anchor,skillMix);
+      anchor=placeAfter(anchor,weaponCard);
+    }else{
+      anchor=placeAfter(anchor,weaponCard);
+    }
+
+    anchor=placeAfter(anchor,calc);
+    const result=q('result');
+    if(result)placeAfter(anchor,result);
+  }
+
+  q('simpleMode')?.addEventListener('click',()=>requestAnimationFrame(normalizeFlow));
+  q('advancedMode')?.addEventListener('click',()=>requestAnimationFrame(normalizeFlow));
+  new MutationObserver(normalizeFlow).observe(document.body,{attributes:true,attributeFilter:['data-calc-mode']});
+  normalizeFlow();
+})();
+</script>`;
+
 function routeKind(pathname){
   if(pathname==='/'||pathname==='/index.html')return 'weapon';
   if(pathname==='/convert.html')return 'convert';
@@ -38,6 +79,7 @@ function normalizeShell(kind,html){
   const legacyNav=/<nav[^>]*class="[^"]*(?:tool-nav|topnav)[^"]*"[^>]*>[\s\S]*?<\/nav>/i;
   if(legacyNav.test(html))html=html.replace(legacyNav,nav);
   else html=html.replace(/<main([^>]*)>/i,m=>m+nav);
+  if(kind==='weapon'&&!html.includes('id="v22WeaponFlowScript"'))html=html.replace('</body>',WEAPON_FLOW_SCRIPT+'</body>');
   return html;
 }
 
