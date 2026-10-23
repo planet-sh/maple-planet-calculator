@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>메이플 플래닛 사냥 환산스공 계산기</title>
+<style>
+:root{--bg:#0b1020;--panel:#121a2e;--panel2:#17223b;--input:#0e1628;--text:#eef3ff;--muted:#9eabc7;--line:#293655;--accent:#7aa2ff;--accentText:#081126;--good:#74d99f;--warn:#ffd37a}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,"Noto Sans KR",sans-serif;background:var(--bg);color:var(--text)}main{max-width:980px;margin:auto;padding:24px 16px 60px}.topnav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:6px;background:var(--panel2);border:1px solid var(--line);border-radius:14px;margin-bottom:18px}.topnav a{text-align:center;text-decoration:none;padding:12px 8px;border-radius:10px;color:var(--muted);font-weight:800}.topnav a.active{background:var(--accent);color:var(--accentText)}h1{font-size:26px;margin:0 0 6px}.sub,.small{color:var(--muted)}.sub{margin-bottom:20px}.small{font-size:12px;line-height:1.65}.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;margin:14px 0}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}label{display:block;font-size:13px;color:var(--muted);margin:10px 0 5px}input,select{width:100%;background:var(--input);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:11px;font-size:16px}.quick{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.quick button,.secondary{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:9px 12px;font-weight:800;cursor:pointer}.primary{width:100%;border:0;border-radius:12px;padding:13px 18px;font-weight:800;font-size:16px;cursor:pointer;background:var(--accent);color:var(--accentText);margin-top:14px}.metric{background:var(--panel2);border-radius:12px;padding:13px}.metric b{display:block;font-size:22px;margin-top:4px}.hero{padding:18px;border:1px solid var(--line);background:var(--panel2);border-radius:14px;margin-top:12px}.hero b{display:block;font-size:34px;color:var(--good);margin-top:4px}.formula{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--input);border:1px solid var(--line);padding:10px 12px;border-radius:10px;overflow:auto}.note{padding:10px 12px;border-left:3px solid var(--accent);background:var(--panel2);border-radius:8px;margin-top:10px}.result{display:none}.line{display:grid;grid-template-columns:1fr auto;gap:12px;padding:9px 0;border-bottom:1px solid var(--line)}.line:last-child{border-bottom:0}.copy{width:100%;margin-top:10px}.good{color:var(--good)}@media(max-width:700px){.grid{grid-template-columns:1fr}.topnav a{font-size:13px;padding:11px 4px}.hero b{font-size:28px}}
+</style>
+</head>
+<body><main>
+<nav class="topnav"><a href="/">무기 계산기</a><a class="active" href="/convert.html">환산스공</a><a href="/captain.html">공대장 계산기</a></nav>
+<h1>사냥 환산스공 계산기 <span class="small">DEV</span></h1>
+<div class="sub">표시 스공에 무기 잠재의 크리티컬 확률 기대값을 먼저 반영하고, 총데미지를 곱연산해 구인·구직용 러프 환산스공을 계산합니다.</div>
+
+<section class="card">
+<h2>1. 현재 스펙</h2>
+<div class="grid">
+<div><label>현재 표시 스공</label><input id="stat" type="number" min="0" step="1" placeholder="예: 40000"></div>
+<div><label>직업</label><select id="job"></select></div>
+<div><label>샤프아이즈</label><select id="sharp"><option value="true">찐샾 적용</option><option value="none">미적용</option></select></div>
+<div><label>대표 사냥 주력기</label><input id="skillLabel" type="text" readonly></div>
+</div>
+<div id="presetNote" class="note small"></div>
+</section>
+
+<section class="card">
+<h2>2. 잠재 입력</h2>
+<div class="grid">
+<div><label>총데미지 합계 (%)</label><input id="totalDmg" type="number" min="0" step="1" value="0"></div>
+<div><label>크리티컬 확률 합계 (%p)</label><input id="bonusCrit" type="number" min="0" step="1" value="0"></div>
+</div>
+<div class="quick"><button type="button" data-add-dmg="6">+ 총6</button><button type="button" data-add-dmg="9">+ 총9</button><button type="button" data-add-crit="8">+ 크8</button><button type="button" data-add-crit="9">+ 크9</button><button type="button" id="resetPot">잠재 초기화</button></div>
+<div class="small" style="margin-top:8px">예: 총9 / 크8 / 크8 → 총데미지 9%, 크리티컬 확률 +16%p.</div>
+</section>
+
+<details class="card"><summary><b>고급 설정 · 프리셋 직접 수정</b></summary><div class="grid" style="margin-top:10px"><div><label>기본 크리티컬 확률 (%)</label><input id="baseCrit" type="number" min="0" max="100" step="1"></div><div><label>기본 크리티컬 데미지 (%p)</label><input id="baseCd" type="number" min="0" step="1"></div><div><label>샤프아이즈 크확 증가 (%p)</label><input id="sharpCrit" type="number" min="0" step="1"></div><div><label>샤프아이즈 크뎀 증가 (%p)</label><input id="sharpCd" type="number" min="0" step="1"></div><div><label>대표 주력기 데미지 (%)</label><input id="skillPct" type="number" min="1" step="1"></div></div><div class="small" style="margin-top:8px">혼합 스킬 직업은 대표 가중값을 표시합니다. 직접 수정하면 수정값을 기준으로 단일 대표 스킬로 계산합니다.</div></details>
+
+<button id="calc" class="primary">환산스공 계산하기</button>
+<section id="result" class="card result">
+<h2>환산 결과</h2>
+<div class="hero"><span class="small">사냥 환산스공 · 어림값</span><b id="converted">-</b><span id="gain" class="small"></span></div>
+<div class="grid" style="margin-top:12px"><div class="metric"><span class="small">크확 기대값 배율</span><b id="critMult">-</b></div><div class="metric"><span class="small">총데미지 배율</span><b id="dmgMult">-</b></div><div class="metric"><span class="small">최종 환산 배율</span><b id="finalMult">-</b></div><div class="metric"><span class="small">적용 크확</span><b id="critRange">-</b></div></div>
+<h3>계산 과정</h3><div id="steps"></div>
+<div class="formula" id="formula"></div>
+<div class="note small"><b>계산 순서:</b> 크리티컬 확률에 따른 대표 주력기 기대 데미지를 먼저 반영한 뒤, 그 결과에 총데미지를 곱연산합니다. 크확은 100%에서 제한합니다.</div>
+<h3>구인·구직용 한줄</h3><div class="formula" id="shareText"></div><button type="button" class="secondary copy" id="copy">한줄 복사</button>
+</section>
+
+<section class="card"><h2>계산기 성격</h2><div class="small">이 값은 실제 DPS, 공격속도, 타수, 스킬 사이클, 젠컷 구조를 모두 환산한 전투력 지표가 아닙니다. <b>같은 표시 스공에서 총뎀·크확 잠재를 포함해 비교하기 위한 사냥용 어림값</b>입니다. 크리티컬 데미지 공식은 현재 계산기에서 사용하는 기대값 모델을 적용합니다.</div></section>
+
+<script>
+const $=id=>document.getElementById(id);const clamp=(v,min,max)=>Math.min(max,Math.max(min,v));const fmt=n=>Math.round(n).toLocaleString('ko-KR');
+const jobs={
+'바이퍼':{crit:0,cd:0,sc:15,sd:140,skill:420,label:'드래곤 스트라이크 420%'},
+'캡틴':{crit:0,cd:0,sc:15,sd:140,skill:380,label:'배틀쉽 캐논 380%'},
+'나이트로드':{crit:50,cd:200,sc:15,sd:40,skill:150,label:'트리플 스로우 150% · 1타당'},
+'섀도어':{crit:0,cd:0,sc:15,sd:140,skill:500,label:'부메랑 스텝 500% · 1타당'},
+'히어로':{crit:0,cd:0,sc:15,sd:140,skill:290,label:'브랜디쉬 290%'},
+'다크나이트':{crit:0,cd:0,sc:15,sd:140,skill:170,label:'스피어 버스터 170% · 1타당'},
+'팔라딘':{crit:0,cd:0,sc:15,sd:140,skill:350,label:'차지 블로우 350%'},
+'아란 (풀콤보 기준)':{crit:70,cd:200,sc:15,sd:140,skill:405,label:'더블360 + 트리플450 · 50:50 가중 405%'},
+'보우마스터':{crit:50,cd:110,sc:15,sd:140,skill:100,label:'폭풍의 시 100% · 1발당'},
+'신궁':{crit:50,cd:110,sc:15,sd:140,skill:810,label:'스트레이프120 + 스나이핑1500 · 50:50 러프 가중'},
+'기타':{crit:0,cd:0,sc:15,sd:140,skill:420,label:'대표 스킬 420%'}
+};
+const job=$('job');Object.keys(jobs).forEach(name=>{const o=document.createElement('option');o.value=name;o.textContent=name;job.appendChild(o)});
+function applyPreset(){const j=jobs[job.value];$('baseCrit').value=j.crit;$('baseCd').value=j.cd;$('sharpCrit').value=j.sc;$('sharpCd').value=j.sd;$('skillPct').value=j.skill;$('skillLabel').value=j.label;$('presetNote').innerHTML=`${job.value} 프리셋 · 기본 크확 ${j.crit}% / 크뎀 ${j.cd}%p · 찐샾 ${j.sc>0?'+'+j.sc+'%p':''} / +${j.sd}%p · ${j.label}`}
+job.addEventListener('change',applyPreset);applyPreset();
+document.querySelectorAll('[data-add-dmg]').forEach(b=>b.addEventListener('click',()=>{$('totalDmg').value=(+$('totalDmg').value||0)+(+b.dataset.addDmg)}));
+document.querySelectorAll('[data-add-crit]').forEach(b=>b.addEventListener('click',()=>{$('bonusCrit').value=(+$('bonusCrit').value||0)+(+b.dataset.addCrit)}));
+$('resetPot').addEventListener('click',()=>{$('totalDmg').value=0;$('bonusCrit').value=0});
+function critMultiplier(skill,c0,c1,cd){return (skill+c1*cd)/(skill+c0*cd)}
+$('calc').addEventListener('click',()=>{const stat=Math.max(0,+$('stat').value||0);if(stat<=0){alert('현재 표시 스공을 입력해주세요.');return}const baseCrit=clamp(+$('baseCrit').value||0,0,100),baseCd=Math.max(0,+$('baseCd').value||0),skill=Math.max(1,+$('skillPct').value||1),useSharp=$('sharp').value==='true',sc=useSharp?Math.max(0,+$('sharpCrit').value||0):0,sd=useSharp?Math.max(0,+$('sharpCd').value||0):0,bonusCrit=Math.max(0,+$('bonusCrit').value||0),totalDmg=Math.max(0,+$('totalDmg').value||0);const beforeCrit=clamp(baseCrit+sc,0,100),afterCrit=clamp(beforeCrit+bonusCrit,0,100),cd=baseCd+sd,c0=beforeCrit/100,c1=afterCrit/100;const cm=critMultiplier(skill,c0,c1,cd),dm=1+totalDmg/100,fm=cm*dm,converted=stat*fm;const critOnly=stat*cm;$('converted').textContent=fmt(converted);$('gain').textContent=`표시 스공 ${fmt(stat)} 대비 +${((fm-1)*100).toFixed(2)}%`;$('critMult').textContent='×'+cm.toFixed(4);$('dmgMult').textContent='×'+dm.toFixed(4);$('finalMult').textContent='×'+fm.toFixed(4);$('critRange').textContent=beforeCrit.toFixed(0)+'% → '+afterCrit.toFixed(0)+'%';$('steps').innerHTML=`<div class="line"><span>① 표시 스공</span><b>${fmt(stat)}</b></div><div class="line"><span>② 크확 기대값 반영</span><b>${fmt(critOnly)}</b></div><div class="line"><span>③ 총데미지 +${totalDmg}% 곱연산</span><b class="good">${fmt(converted)}</b></div>`;$('formula').textContent=`${fmt(stat)} × ${cm.toFixed(4)} × ${dm.toFixed(4)} = ${fmt(converted)}`;const pot=[];if(totalDmg)pot.push('총'+totalDmg);if(bonusCrit)pot.push('크'+bonusCrit);const text=`${job.value} · 표시스공 ${fmt(stat)} / ${pot.length?pot.join(' '):'추가 잠재 없음'} → 사냥 환산 약 ${fmt(converted)} (×${fm.toFixed(3)})`;$('shareText').textContent=text;$('result').style.display='block';$('result').scrollIntoView({behavior:'smooth',block:'start'})});
+$('copy').addEventListener('click',async()=>{const t=$('shareText').textContent;try{await navigator.clipboard.writeText(t);$('copy').textContent='복사 완료';setTimeout(()=>$('copy').textContent='한줄 복사',1200)}catch(e){alert(t)}});
+</script>
+</main></body></html>
