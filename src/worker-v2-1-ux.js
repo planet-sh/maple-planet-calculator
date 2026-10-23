@@ -18,7 +18,7 @@ label{font-weight:700;color:var(--text)!important}.small{line-height:1.65}.metri
 #modeDesc{display:none!important}
 .calc-section-kicker{font-size:11px;font-weight:900;letter-spacing:.08em;color:var(--accent);text-transform:uppercase;margin-bottom:4px}
 
-/* Input-first UI: hide long helper copy, keep only live result / validation text */
+/* Compact input UI: helper copy moves into tooltips. */
 .desktop-input-grid>.card>.small,
 .desktop-input-grid>.card>.grid .small,
 .desktop-input-grid>.card .weapon>.small,
@@ -29,6 +29,14 @@ label{font-weight:700;color:var(--text)!important}.small{line-height:1.65}.metri
 .desktop-input-grid>.card [id$="Preview"],
 .desktop-input-grid>.card [id$="Hint"]{display:block!important}
 #jobNote,#recoSkillAutoNote{display:none!important}
+
+.field-help{display:inline-grid;place-items:center;width:17px;height:17px;margin-left:6px;padding:0;border:1px solid var(--line);border-radius:50%;background:var(--panel2);color:var(--muted);font-size:11px;font-weight:900;line-height:1;vertical-align:1px;cursor:help;position:relative;overflow:visible}
+.field-help:hover,.field-help:focus,.field-help.open{color:var(--text);border-color:var(--accent);outline:none}
+.field-help::after{content:attr(data-tip);position:absolute;left:50%;bottom:calc(100% + 9px);transform:translateX(-50%);width:max-content;max-width:min(360px,70vw);padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:var(--input);color:var(--text);font-size:12px;font-weight:500;line-height:1.55;text-align:left;white-space:normal;box-shadow:0 10px 28px rgba(0,0,0,.28);opacity:0;visibility:hidden;pointer-events:none;z-index:1000}
+.field-help::before{content:'';position:absolute;left:50%;bottom:calc(100% + 4px);transform:translateX(-50%);border:5px solid transparent;border-top-color:var(--line);opacity:0;visibility:hidden;z-index:1001}
+.field-help:hover::after,.field-help:focus::after,.field-help.open::after,.field-help:hover::before,.field-help:focus::before,.field-help.open::before{opacity:1;visibility:visible}
+
+.recommend-collapse{margin:16px 0;border:1px solid var(--line);border-radius:14px;background:var(--panel);overflow:hidden}.recommend-collapse>summary{padding:15px 17px;font-weight:850;cursor:pointer;list-style-position:inside}.recommend-collapse>summary:hover{background:var(--panel2)}.recommend-collapse[open]>summary{border-bottom:1px solid var(--line);background:var(--panel2)}.recommend-collapse>.card{margin:0!important;border:0!important;border-radius:0!important;box-shadow:none!important}.recommend-summary-note{font-size:12px;font-weight:500;color:var(--muted);margin-left:5px}
 
 /* Desktop / ultrawide workspace */
 @media(min-width:1180px){
@@ -47,7 +55,7 @@ label{font-weight:700;color:var(--text)!important}.small{line-height:1.65}.metri
   .card{padding:20px}
 }
 @media(max-width:1179px){.desktop-input-grid{display:block}.desktop-input-grid>.card{margin:14px 0}}
-@media(max-width:720px){.calc-purpose-head{display:block}.calc-purpose-head .small{text-align:left;margin-top:6px}.purpose-switch{grid-template-columns:1fr}.mode-switch{grid-template-columns:1fr 1fr!important}}
+@media(max-width:720px){.calc-purpose-head{display:block}.calc-purpose-head .small{text-align:left;margin-top:6px}.purpose-switch{grid-template-columns:1fr}.mode-switch{grid-template-columns:1fr 1fr!important}.field-help::after{left:auto;right:-8px;transform:none;max-width:280px}.field-help::before{left:auto;right:2px;transform:none}}
 </style>`;
 
 const UX_SCRIPT = `
@@ -64,7 +72,6 @@ const UX_SCRIPT = `
   if(document.body.dataset.calcMode==='quick'||(!simple.classList.contains('active')&&!advanced.classList.contains('active'))){simple.click()}
   simple.textContent='일반 계산';advanced.textContent='심화 계산';
 
-  // Remove the old onboarding copy that references the deleted quick mode.
   Array.from(document.querySelectorAll('details,section.card,div')).forEach(el=>{
     const text=(el.textContent||'').replace(/\s+/g,' ').trim();
     if(text.includes('처음이라면? 사용법 30초 보기')||text.includes('사용법 30초 보기')){
@@ -127,6 +134,42 @@ const UX_SCRIPT = `
     const grid=document.createElement('div');grid.id='desktopInputGrid';grid.className='desktop-input-grid';
     characterCard.parentNode.insertBefore(grid,characterCard);
     [characterCard,atkCard,statCard,pctCard].filter(Boolean).forEach(card=>grid.appendChild(card));
+  }
+
+  // Convert hidden helper text into hover/focus tooltips beside each input label.
+  const fallbackTips={
+    job:'직업 프리셋에 따라 기본 크리티컬 확률과 대표 주력기 수치가 자동 적용됩니다.',
+    crit:'직업의 기본 크리티컬 확률입니다. 다른 상시 크확 효과가 있다면 직접 수정할 수 있습니다.',
+    simpleSkillPct:'사냥에서 주로 사용하는 스킬의 1타당 데미지%입니다. 타수는 입력하지 않습니다.',
+    advancedBaseSkillPct:'심화 계산에서 실전 스킬 비중을 끈 경우 사용할 대표 주력기의 1타당 데미지%입니다.',
+    equipAtk:'무기와 공격력이 붙은 장비의 순수 공격력을 합산합니다. 잠재 깡공은 제외합니다.',
+    buff:'혼테일·핑크빈·요괴대사 등 공격력 버프입니다. 버프 공격력은 공% 적용 대상에서 제외됩니다.',
+    calAtk1:'첫 번째 테스트 장비의 공격력 수치입니다.',calAtk2:'두 번째 테스트 장비의 공격력 수치입니다.',
+    calMin1:'측정 ① 상태의 MIN 스공입니다.',calMax1:'측정 ① 상태의 MAX 스공입니다.',calMin2:'측정 ② 상태의 MIN 스공입니다.',calMax2:'측정 ② 상태의 MAX 스공입니다.'
+  };
+  function cleanTip(text){return (text||'').replace(/\s+/g,' ').replace(/^※\s*/,'').trim()}
+  function helperFor(label){
+    const parent=label.parentElement;if(!parent)return '';
+    const control=parent.querySelector('input,select');
+    const own=Array.from(parent.querySelectorAll(':scope>.small')).map(x=>cleanTip(x.textContent)).filter(Boolean).join(' ');
+    return own||fallbackTips[control?.id]||'';
+  }
+  q('desktopInputGrid')?.querySelectorAll('label').forEach(label=>{
+    if(label.querySelector('.field-help'))return;
+    const tip=helperFor(label);if(!tip)return;
+    const help=document.createElement('button');help.type='button';help.className='field-help';help.textContent='?';help.dataset.tip=tip;help.setAttribute('aria-label','입력 도움말');
+    help.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();document.querySelectorAll('.field-help.open').forEach(x=>{if(x!==help)x.classList.remove('open')});help.classList.toggle('open')});
+    label.appendChild(help);
+  });
+  document.addEventListener('click',e=>{if(!e.target.closest('.field-help'))document.querySelectorAll('.field-help.open').forEach(x=>x.classList.remove('open'))});
+
+  // Recommendations are secondary to actual weapon comparison: collapse by default.
+  const reco=q('potentialRecommendCard');
+  if(reco&&!q('recommendCollapse')){
+    const wrap=document.createElement('details');wrap.id='recommendCollapse';wrap.className='recommend-collapse';
+    const sum=document.createElement('summary');sum.innerHTML='직업별 무기 잠재 추천 TOP3 <span class="recommend-summary-note">· 참고용, 클릭해서 보기</span>';
+    reco.parentNode.insertBefore(wrap,reco);wrap.appendChild(sum);wrap.appendChild(reco);
+    const heading=reco.querySelector('h2');if(heading)heading.textContent='무기 잠재 추천';
   }
 })();
 </script>`;
