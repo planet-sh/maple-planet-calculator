@@ -3,14 +3,42 @@ import { validateHtml, regressionHeader } from './v2-2/regression.js';
 
 // V2.2 migration entrypoint.
 // V2.1 workers below this file are treated as frozen compatibility code.
-// New V2.2 behavior should be added above this boundary and consume canonical
-// data from ./v2-2/job-presets.js instead of adding another worker in the old chain.
+// New V2.2 behavior belongs here (or in ./v2-2 modules), not in another
+// compatibility worker.
+
+const COMMON_SHELL_STYLE = `
+<style id="v22CommonShellStyle">
+.v22-tool-nav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:6px;background:var(--panel2);border:1px solid var(--line);border-radius:14px;margin:0 0 18px;width:100%}
+.v22-tool-nav a{text-align:center;text-decoration:none;padding:12px 8px;border-radius:10px;color:var(--muted);font-weight:800;min-width:0}
+.v22-tool-nav a.active{background:var(--accent);color:var(--accentText)}
+@media(min-width:1180px){main{max-width:1540px!important;padding-left:28px!important;padding-right:28px!important}}
+@media(min-width:1680px){main{max-width:1680px!important}}
+@media(max-width:720px){.v22-tool-nav a{font-size:13px;padding:11px 4px}}
+</style>`;
 
 function routeKind(pathname){
   if(pathname==='/'||pathname==='/index.html')return 'weapon';
   if(pathname==='/convert.html')return 'convert';
   if(pathname==='/captain.html')return 'captain';
   return null;
+}
+
+function commonNav(kind){
+  const items=[
+    ['convert','/convert.html','환산스공'],
+    ['weapon','/','무기 계산기'],
+    ['captain','/captain.html','공대장 계산기']
+  ];
+  return '<nav class="v22-tool-nav" id="v22ToolNav" aria-label="계산기 메뉴">'+items.map(([key,href,label])=>'<a href="'+href+'"'+(key===kind?' class="active" aria-current="page"':'')+'>'+label+'</a>').join('')+'</nav>';
+}
+
+function normalizeShell(kind,html){
+  if(!html.includes('id="v22CommonShellStyle"'))html=html.replace('</head>',COMMON_SHELL_STYLE+'</head>');
+  const nav=commonNav(kind);
+  const legacyNav=/<nav[^>]*class="[^"]*(?:tool-nav|topnav)[^"]*"[^>]*>[\s\S]*?<\/nav>/i;
+  if(legacyNav.test(html))html=html.replace(legacyNav,nav);
+  else html=html.replace(/<main([^>]*)>/i,m=>m+nav);
+  return html;
 }
 
 export default {
@@ -20,7 +48,9 @@ export default {
     const contentType=response.headers.get('content-type')||'';
     if(!kind||!contentType.includes('text/html'))return response;
 
-    const html=await response.text();
+    let html=await response.text();
+    html=normalizeShell(kind,html);
+
     const regression=validateHtml(kind,html);
     const headers=new Headers(response.headers);
     headers.delete('content-length');
@@ -28,9 +58,6 @@ export default {
     headers.set('x-planet-version','2.2-dev');
     headers.set('x-planet-regression',regressionHeader(regression));
 
-    // DEV fail-visible behavior: do not silently ship a page with a known core
-    // feature missing. Keep the actual page available, but surface the failure
-    // in a small diagnostic banner so Preview verification catches it.
     let output=html;
     if(!regression.ok){
       const msg='V2.2 회귀 검사: 누락 감지 · '+regression.missing.join(' / ');
