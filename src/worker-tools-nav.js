@@ -8,8 +8,8 @@ const TOOL_NAV_STYLE = `
 @media(max-width:720px){.tool-nav a{font-size:13px;padding:11px 4px}}
 </style>`;
 
-const TOOL_NAV = `<nav class="tool-nav" id="toolNav"><a class="active" href="/">무기 계산기</a><a href="/convert.html">환산스공</a><a href="/captain.html">공대장 계산기</a></nav>`;
-const CAPTAIN_NAV = `<nav class="topnav"><a href="/">무기 계산기</a><a href="/convert.html">환산스공</a><a class="active" href="/captain.html">공대장 계산기</a></nav>`;
+const TOOL_NAV = `<nav class="tool-nav" id="toolNav"><a href="/convert.html">환산스공</a><a class="active" href="/">무기 계산기</a><a href="/captain.html">공대장 계산기</a></nav>`;
+const CAPTAIN_NAV = `<nav class="topnav"><a href="/convert.html">환산스공</a><a href="/">무기 계산기</a><a class="active" href="/captain.html">공대장 계산기</a></nav>`;
 const CAPTAIN_SPLIT_SCRIPT = `<script src="/captain-split.js" defer></script>`;
 
 export default {
