@@ -1,4 +1,4 @@
-import baseWorker from './worker-v2-1-common-reco.js';
+import baseWorker from './worker-v2-1-boss-reco.js';
 
 const PATCH_SCRIPT = `
 <script>
@@ -30,10 +30,10 @@ const PATCH_SCRIPT = `
     const job=q('job');if(!job||job.value!=='아란 (풀콤보 기준)')return;
     const simple=q('simpleSkillPct');
     const adv=q('advancedBaseSkillPct');
-    if(simple&&simple.value!=='405')simple.value='405';
-    if(adv&&adv.value!=='405')adv.value='405';
+    if(simple&&simple.value!=='356')simple.value='356';
+    if(adv&&adv.value!=='356')adv.value='356';
     const note=q('recoSkillAutoNote');
-    const text='자동값: 더블 스윙 360% + 트리플 스윙 450%를 사냥 비중 50:50으로 러프 가중한 대표값 405% · 추천 잠재는 스윙 계열 기준으로 보정';
+    const text='자동값: 높성 우2 약 6분 실측 기준 기본공격 100% 16.75% + 더블 스윙 360% 39.07% + 트리플 스윙 450% 44.18% 가중 대표값 약 356% · 추천 TOP3 크확 효율은 세 공격 비중을 각각 계산';
     if(note&&note.textContent!==text)note.textContent=text;
   }
 
@@ -57,7 +57,11 @@ const PATCH_SCRIPT = `
 function patchAranModel(html){
   html=html.replace(
     "'아란 (풀콤보 기준)':{name:'파이널 블로우',pct:700}",
-    "'아란 (풀콤보 기준)':{name:'더블 스윙 + 트리플 스윙',mix:[{name:'더블 스윙',pct:360,weight:.5},{name:'트리플 스윙',pct:450,weight:.5}],note:'사냥 대표 비중 50:50 러프 가중 · 오버스윙 M 기준'}"
+    "'아란 (풀콤보 기준)':{name:'기본공격 + 더블 스윙 + 트리플 스윙',mix:[{name:'기본공격',pct:100,weight:.16752},{name:'더블 스윙',pct:360,weight:.39069},{name:'트리플 스윙',pct:450,weight:.44179}],note:'높은 성벽 우2 약 6분 DPS 실측 비중 · 바디 프레셔 제외'}"
+  );
+  html=html.replace(
+    "'아란 (풀콤보 기준)':{name:'더블 스윙 + 트리플 스윙',mix:[{name:'더블 스윙',pct:360,weight:.5},{name:'트리플 스윙',pct:450,weight:.5}],note:'사냥 대표 비중 50:50 러프 가중 · 오버스윙 M 기준'}",
+    "'아란 (풀콤보 기준)':{name:'기본공격 + 더블 스윙 + 트리플 스윙',mix:[{name:'기본공격',pct:100,weight:.16752},{name:'더블 스윙',pct:360,weight:.39069},{name:'트리플 스윙',pct:450,weight:.44179}],note:'높은 성벽 우2 약 6분 DPS 실측 비중 · 바디 프레셔 제외'}"
   );
   html=html.replace('</body>',PATCH_SCRIPT+'</body>');
   return html;
