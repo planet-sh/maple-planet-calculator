@@ -26,12 +26,27 @@ function patchBossReco(html){
     else attackMult=((base+flat)*(1+atkPct/100))/base;
     return attackMult*(1+dmg/100)*critGain(jobName,crit);
   }`,
-`  function score(jobName,lines,measured,mode='normal'){
+`  function currentBuffAtk(){
+    const buff=q('buff');
+    let v=0;
+    if(buff){v=buff.value==='custom'?(parseFloat(q('buffCustom')?.value)||0):(parseFloat(buff.value)||0)}
+    if(q('sprinkleToggle')?.checked)v+=20;
+    return Math.max(0,v);
+  }
+  function currentBaseAtkPct(){return q('heroEchoToggle')?.checked?4:0}
+  function score(jobName,lines,measured,mode='normal'){
     const base=basePureAtk(jobName);let flat=0,atkPct=0,crit=0,dmg=0,boss=0;
     lines.forEach(x=>{if(x[1]==='flat')flat+=x[2];if(x[1]==='atkPct')atkPct+=x[2];if(x[1]==='crit')crit+=x[2];if(x[1]==='dmg')dmg+=x[2];if(x[1]==='boss')boss+=x[2]});
+    const buffAtk=currentBuffAtk(),baseAtkPct=currentBaseAtkPct();
     let attackMult;
-    if(measured){const eqAtk=flat+(base+flat)*atkPct/100;attackMult=Math.max(.01,1+(eqAtk*measured.per)/measured.avg)}
-    else attackMult=((base+flat)*(1+atkPct/100))/base;
+    if(measured){
+      const eqAtk=flat+(base+flat)*(atkPct/100);
+      attackMult=Math.max(.01,1+(eqAtk*measured.per)/measured.avg);
+    }else{
+      const before=base*(1+baseAtkPct/100)+buffAtk;
+      const after=(base+flat)*(1+(baseAtkPct+atkPct)/100)+buffAtk;
+      attackMult=before>0?after/before:1;
+    }
     const baseBucket=baseBossBucket(mode);
     const damageMult=mode==='boss'?(1+(baseBucket+dmg+boss)/100)/(1+baseBucket/100):(1+dmg/100);
     return attackMult*damageMult*critGain(jobName,crit);
@@ -71,7 +86,7 @@ function patchBossReco(html){
 
   html=html.replace(
 `    q('recoWeaponNote').textContent='기본값: '+d.base+' + 작/성장 '+d.upgrade+' · 추천 잠재 등급 1줄 공'+p.firstFlat+' / 2·3줄 공'+p.lowerFlat+(p.innateBoss?' · 고유 보공 +20% (일반 필드 미적용)':'')+' · 위 캐릭터/장비 입력칸에서 직접 수정 가능';`,
-`    q('recoWeaponNote').textContent='기본값: '+d.base+' + 작/성장 '+d.upgrade+' · 추천 잠재 등급 1줄 공'+p.firstFlat+' / 2·3줄 공'+p.lowerFlat+(p.innateBoss?' · 고유 보공 +20%':'')+' · 일반 필드/보공 적용 몬스터 TOP3를 각각 계산 · 보공 적용 추천은 잠재 보공 합계 최대 70까지만 허용 · 이탈 옵션은 2·3줄 중 최대 1줄까지만 추천 후보에 포함 · 위 캐릭터/장비 입력칸에서 직접 수정 가능';`
+`    q('recoWeaponNote').textContent='기본값: '+d.base+' + 작/성장 '+d.upgrade+' · 추천 잠재 등급 1줄 공'+p.firstFlat+' / 2·3줄 공'+p.lowerFlat+(p.innateBoss?' · 고유 보공 +20%':'')+' · 공%는 장비공합/잠재 깡공에만 적용하고 버프공은 분리 · 일반 필드/보공 적용 몬스터 TOP3를 각각 계산 · 보공 적용 추천은 잠재 보공 합계 최대 70까지만 허용 · 이탈 옵션은 2·3줄 중 최대 1줄까지만 추천 후보에 포함 · 위 캐릭터/장비 입력칸에서 직접 수정 가능';`
   );
 
   html=html.replace(
@@ -89,13 +104,13 @@ function patchBossReco(html){
 
   html=html.replace(
 `  ['curAtk','equipAtk','calAtk1','calAtk2','calMin1','calMax1','calMin2','calMax2'].forEach(id=>q(id)?.addEventListener('input',render));`,
-`  ['curAtk','equipAtk','calAtk1','calAtk2','calMin1','calMax1','calMin2','calMax2'].forEach(id=>q(id)?.addEventListener('input',render));
-  ['fieldMode','guildBossToggle'].forEach(id=>{q(id)?.addEventListener('change',render);q(id)?.addEventListener('input',render)});`
+`  ['curAtk','equipAtk','calAtk1','calAtk2','calMin1','calMax1','calMin2','calMax2','buff','buffCustom'].forEach(id=>q(id)?.addEventListener('input',render));
+  ['fieldMode','guildBossToggle','sprinkleToggle','heroEchoToggle','buff'].forEach(id=>{q(id)?.addEventListener('change',render)});`
   );
 
   html=html.replace('</style>',`\n.reco-dual-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.reco-field-box{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px}.reco-field-box h4{margin:0 0 6px;font-size:14px}@media(max-width:720px){.reco-dual-grid{grid-template-columns:1fr}}\n</style>`);
 
-  html=html.replace('</body>',`<script>(()=>{const q=id=>document.getElementById(id);function sync(){const base=q('recoBaseTop')?.previousElementSibling;const measured=q('recoMeasuredTop')?.parentElement?.querySelector('h3');if(base)base.textContent='실전 추천 TOP 3 · 필드별';if(measured)measured.textContent='내 실측 기준 TOP 3 · 필드별';let note=q('recoOffTierRule');if(!note&&q('recoBaseTop')){note=document.createElement('div');note.id='recoOffTierRule';note.className='small';note.style.marginTop='8px';q('recoBaseTop').parentElement.appendChild(note)}if(note)note.innerHTML='※ 실제 획득 난이도를 고려해 <b>2·3줄 이탈 옵션은 최대 1줄까지만</b> 추천에 포함합니다. 보공 적용 몬스터 추천은 비현실적인 보90 조합을 제외하고 <b>잠재 보공 합계 70 이하</b>만 표시합니다.'}sync()})();</script></body>`);
+  html=html.replace('</body>',`<script>(()=>{const q=id=>document.getElementById(id);function sync(){const base=q('recoBaseTop')?.previousElementSibling;const measured=q('recoMeasuredTop')?.parentElement?.querySelector('h3');if(base)base.textContent='실전 추천 TOP 3 · 필드별';if(measured)measured.textContent='내 실측 기준 TOP 3 · 필드별';let note=q('recoOffTierRule');if(!note&&q('recoBaseTop')){note=document.createElement('div');note.id='recoOffTierRule';note.className='small';note.style.marginTop='8px';q('recoBaseTop').parentElement.appendChild(note)}if(note)note.innerHTML='※ 공%는 <b>장비공합 + 잠재 깡공</b>에 적용하며 혼벞·뿌리기 등 버프공은 공% 적용 대상에서 제외합니다. 실제 획득 난이도를 고려해 <b>2·3줄 이탈 옵션은 최대 1줄까지만</b> 추천에 포함합니다. 보공 적용 몬스터 추천은 비현실적인 보90 조합을 제외하고 <b>잠재 보공 합계 70 이하</b>만 표시합니다.'}sync()})();</script></body>`);
   return html;
 }
 
