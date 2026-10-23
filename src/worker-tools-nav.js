@@ -1,4 +1,4 @@
-import app from './worker-v2-1-mode-guard.js';
+import app from './worker-v2-1-advanced-help.js';
 
 const TOOL_NAV_STYLE = `
 <style>
