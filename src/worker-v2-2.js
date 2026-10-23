@@ -200,11 +200,12 @@ function commonNav(kind){
 function normalizeShell(kind,html){
   if(!html.includes('id="v22CommonShellStyle"'))html=html.replace('</head>',COMMON_SHELL_STYLE+'</head>');
   const nav=commonNav(kind);
-  const legacyNav=/<nav[^>]*class="[^"]*(?:tool-nav|topnav)[^"]*"[^>]*>[\\s\\S]*?<\\/nav>/i;
+  const legacyNav=new RegExp('<nav[^>]*class="[^"]*(?:tool-nav|topnav)[^"]*"[^>]*>[\\s\\S]*?</nav>','i');
   if(legacyNav.test(html))html=html.replace(legacyNav,nav);
   else html=html.replace(/<main([^>]*)>/i,m=>m+nav);
   if(kind==='weapon'){
-    html=html.replace(/메이플 플래닛 계산기 <span class="tag">V[^<]+<\\/span>/,'메이플 플래닛 계산기 <span class="tag">V2.2</span>');
+    const versionTag=new RegExp('메이플 플래닛 계산기 <span class="tag">V[^<]+</span>');
+    html=html.replace(versionTag,'메이플 플래닛 계산기 <span class="tag">V2.2</span>');
     if(!html.includes('id="v22WeaponFlowScript"'))html=html.replace('</body>',WEAPON_FLOW_SCRIPT+'</body>');
     if(!html.includes('id="v22WeaponUiScript"'))html=html.replace('</body>',WEAPON_V22_UI_SCRIPT+'</body>');
   }
@@ -225,7 +226,7 @@ export default {
     const headers=new Headers(response.headers);
     headers.delete('content-length');
     headers.delete('etag');
-    headers.set('x-planet-version','2.2-dev');
+    headers.set('x-planet-version','2.2');
     headers.set('x-planet-regression',regressionHeader(regression));
 
     let output=html;
