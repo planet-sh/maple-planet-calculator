@@ -56,7 +56,7 @@ const COMMON_RECO_SCRIPT = `
         lastText=text;
         const parts=text.split(' · ').filter(Boolean);
         const html=parts.map(x=>{
-          const m=x.match(/^(저스펙|중스펙|고스펙):\\s*(.*)$/);
+          const m=x.match(/^(저스펙|중스펙|고스펙):\s*(.*)$/);
           return m?'<div class="metric"><span class="small">'+m[1]+'</span><b>'+m[2]+'</b></div>':'';
         }).join('');
         if(tier.innerHTML!==html)tier.innerHTML=html;
@@ -91,6 +91,21 @@ const COMMON_RECO_SCRIPT = `
   const bodyObs=new MutationObserver(syncQuickRecoUi);
   bodyObs.observe(document.body,{attributes:true,attributeFilter:['data-calc-mode']});
   syncQuickRecoUi();
+
+  // UX 레이어가 추천 영역을 details 토글로 감싼 뒤, 첫 진입은 항상 접힘 상태로 시작합니다.
+  function collapseRecommendationOnce(){
+    const details=q('potentialRecommendationDetails');
+    if(!details)return false;
+    details.open=false;
+    details.removeAttribute('open');
+    return true;
+  }
+  if(!collapseRecommendationOnce()){
+    const collapseObserver=new MutationObserver(()=>{
+      if(collapseRecommendationOnce())collapseObserver.disconnect();
+    });
+    collapseObserver.observe(document.body,{childList:true,subtree:true});
+  }
 })();
 </script>`;
 
