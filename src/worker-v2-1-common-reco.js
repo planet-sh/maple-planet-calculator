@@ -71,6 +71,15 @@ const COMMON_RECO_SCRIPT = `
     }
   }
 
+  if(!q('recoOffMetaNote')){
+    const note=document.createElement('div');
+    note.id='recoOffMetaNote';
+    note.className='small reco-offmeta-note';
+    note.innerHTML='※ TOP3는 <b>정옵 조합 기준 추천</b>입니다. 총뎀18%·크확8% 등 이탈옵이 포함된 실제 매물은 현재 스펙에 따라 효율이 달라질 수 있으므로, <b>매물간 비교 기능으로 직접 비교</b>하는 것을 권장합니다.';
+    const measured=q('recoMeasured');
+    if(measured)measured.insertAdjacentElement('afterend',note);else card.appendChild(note);
+  }
+
   const breakpointDetails=Array.from(card.querySelectorAll('details')).find(d=>(d.querySelector('summary')?.textContent||'').includes('잠재 역전표'));
   let lastQuick=null;
   function syncQuickRecoUi(){
@@ -86,7 +95,7 @@ const COMMON_RECO_SCRIPT = `
 </script>`;
 
 function patchCommonReco(html){
-  html=html.replace('</style>',`\nbody[data-calc-mode="quick"] main>#potentialRecommendCard{display:block!important}\nbody[data-calc-mode="quick"] #recoMeasured{display:none!important}\nbody[data-calc-mode="quick"] .weapon:has(#recoBaseTop){grid-column:1/-1}\n.common-recommend-card{display:block}\n.reco-tier-flow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:10px}\n.reco-tier-flow .metric b{font-size:14px;line-height:1.45}\n@media(max-width:720px){.reco-tier-flow{grid-template-columns:1fr}}\n</style>`);
+  html=html.replace('</style>',`\nbody[data-calc-mode="quick"] main>#potentialRecommendCard{display:block!important}\nbody[data-calc-mode="quick"] #recoMeasured{display:none!important}\nbody[data-calc-mode="quick"] .weapon:has(#recoBaseTop){grid-column:1/-1}\n.common-recommend-card{display:block}\n.reco-tier-flow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:10px}\n.reco-tier-flow .metric b{font-size:14px;line-height:1.45}\n.reco-offmeta-note{margin-top:10px;padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:var(--panel2)}\n@media(max-width:720px){.reco-tier-flow{grid-template-columns:1fr}}\n</style>`);
   html=html.replace('</body>',COMMON_RECO_SCRIPT+'</body>');
   return html;
 }
