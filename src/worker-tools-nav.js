@@ -1,4 +1,4 @@
-import app from './worker-v2-1-spec-aranswing.js';
+import app from './worker-v2-1-ux.js';
 
 const TOOL_NAV_STYLE = `
 <style>
