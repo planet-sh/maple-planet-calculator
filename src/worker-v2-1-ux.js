@@ -15,8 +15,20 @@ const UX_STYLE = `
 label{font-weight:700;color:var(--text)!important}.small{line-height:1.65}.metric{border:1px solid color-mix(in srgb,var(--line) 82%,transparent)}
 .common-recommend-card{border-width:2px!important}.common-recommend-card>h2,.common-recommend-card .weapon-head h2{font-size:20px}
 .reco-field-box{background:color-mix(in srgb,var(--panel2) 88%,var(--bg))!important}.reco-rank b{letter-spacing:-.02em}
-#modeDesc{padding:9px 12px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);margin-top:10px}
+#modeDesc{display:none!important}
 .calc-section-kicker{font-size:11px;font-weight:900;letter-spacing:.08em;color:var(--accent);text-transform:uppercase;margin-bottom:4px}
+
+/* Input-first UI: hide long helper copy, keep only live result / validation text */
+.desktop-input-grid>.card>.small,
+.desktop-input-grid>.card>.grid .small,
+.desktop-input-grid>.card .weapon>.small,
+.desktop-input-grid>.card .weapon label+input+.small,
+.desktop-input-grid>.card .weapon label+select+.small{display:none!important}
+.desktop-input-grid>.card .metric .small,
+.desktop-input-grid>.card .check,
+.desktop-input-grid>.card [id$="Preview"],
+.desktop-input-grid>.card [id$="Hint"]{display:block!important}
+#jobNote,#recoSkillAutoNote{display:none!important}
 
 /* Desktop / ultrawide workspace */
 @media(min-width:1180px){
@@ -52,12 +64,21 @@ const UX_SCRIPT = `
   if(document.body.dataset.calcMode==='quick'||(!simple.classList.contains('active')&&!advanced.classList.contains('active'))){simple.click()}
   simple.textContent='일반 계산';advanced.textContent='심화 계산';
 
+  // Remove the old onboarding copy that references the deleted quick mode.
+  Array.from(document.querySelectorAll('details,section.card,div')).forEach(el=>{
+    const text=(el.textContent||'').replace(/\s+/g,' ').trim();
+    if(text.includes('처음이라면? 사용법 30초 보기')||text.includes('사용법 30초 보기')){
+      const target=el.closest('details')||el.closest('section.card')||el;
+      if(target&&target!==document.body&&target!==document.querySelector('main'))target.remove();
+    }
+  });
+
   if(!Array.from(field.options).some(o=>o.value==='boss')){
     const o=document.createElement('option');o.value='boss';o.textContent='보스';field.appendChild(o);
   }
 
   const purpose=document.createElement('section');purpose.className='calc-purpose';purpose.id='calcPurpose';
-  purpose.innerHTML='<div class="calc-purpose-head"><div><div class="calc-section-kicker">STEP 1</div><h2>무엇을 비교하나요?</h2></div><div class="small">사냥용은 일반 몬스터 기준, 보스용은 보스 공격력 잠재가 적용되는 대상을 기준으로 계산합니다.</div></div><div class="purpose-switch"><button type="button" class="purpose-btn active" data-purpose="hunt">사냥용 무기 비교</button><button type="button" class="purpose-btn" data-purpose="boss">보스용 무기 비교</button></div>';
+  purpose.innerHTML='<div class="calc-purpose-head"><div><div class="calc-section-kicker">STEP 1</div><h2>무엇을 비교하나요?</h2></div></div><div class="purpose-switch"><button type="button" class="purpose-btn active" data-purpose="hunt">사냥용 무기 비교</button><button type="button" class="purpose-btn" data-purpose="boss">보스용 무기 비교</button></div>';
   modeSwitch.parentNode.insertBefore(purpose,modeSwitch);
 
   const modeTitle=document.createElement('div');modeTitle.innerHTML='<div class="calc-section-kicker" style="margin-top:14px">STEP 2</div><div style="font-weight:850;margin-bottom:7px">계산 정밀도</div>';
@@ -97,7 +118,6 @@ const UX_SCRIPT = `
   function updateModeCopy(){if(!desc)return;desc.innerHTML=advanced.classList.contains('active')?'<b>심화 계산</b> · 공1·주스탯 실측과 실전 스킬 비중까지 반영하는 정밀 비교입니다.':'<b>일반 계산</b> · 직업 프리셋과 대표 주력기 기준으로 대부분의 실매물을 빠르게 비교합니다.'}
   simple.addEventListener('click',()=>requestAnimationFrame(updateModeCopy));advanced.addEventListener('click',()=>requestAnimationFrame(updateModeCopy));updateModeCopy();
 
-  // 대형 화면에서는 입력 카드만 2열 워크스페이스로 묶고, 추천/매물/결과는 전체 너비를 유지한다.
   function cardByTitle(prefix){return Array.from(document.querySelectorAll('main>section.card')).find(s=>(s.querySelector(':scope>h2')?.textContent||'').trim().startsWith(prefix))}
   const characterCard=cardByTitle('1. 캐릭터 / 장비');
   const atkCard=cardByTitle('2. 공1당 스공 효율 측정');
