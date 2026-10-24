@@ -8,15 +8,22 @@ import app from './worker-v2-2-direct-summary.js';
 
 const ARAN_HUNTING_STYLE = `
 <style id="v22AranHuntingStyle">
-.v22-aran-hunting-box{margin-top:12px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--panel2)}
-.v22-aran-hunting-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:end}
-.v22-aran-hunting-note{margin-top:8px;font-size:12px;line-height:1.65;color:var(--muted)}
 .v22-aran-weapon-field{margin-top:10px}
-.v22-aran-wb-muted{opacity:.55}
 .v22-recommend-details{margin-top:14px;border:1px solid var(--line);border-radius:12px;background:var(--panel);overflow:hidden}
 .v22-recommend-details>summary{padding:12px 14px;font-weight:800;cursor:pointer;color:var(--text)}
 .v22-recommend-details>#potentialRecommendCard{margin:0;border:0;border-top:1px solid var(--line);border-radius:0}
-@media(max-width:760px){.v22-aran-hunting-grid{grid-template-columns:1fr}}
+.v22-aran-speed-result{margin-top:14px;padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--panel2)}
+.v22-aran-speed-result h3{margin:0 0 10px;font-size:16px}
+.v22-aran-speed-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:10px}
+.v22-aran-speed-toggle{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--input);cursor:pointer;margin:0}
+.v22-aran-speed-toggle input{width:auto;margin:0;transform:scale(1.15)}
+.v22-aran-speed-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin-top:10px}
+.v22-aran-speed-item{padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--input)}
+.v22-aran-speed-item b{display:block;margin-bottom:4px}
+.v22-aran-speed-winner{margin-top:10px;font-weight:800;color:var(--good)}
+.v22-aran-speed-note{margin-top:9px;font-size:12px;line-height:1.65;color:var(--muted)}
+.v22-aran-muted{opacity:.58}
+@media(max-width:760px){.v22-aran-speed-controls{grid-template-columns:1fr}}
 </style>`;
 
 const ARAN_HUNTING_SCRIPT = `
@@ -26,8 +33,9 @@ const ARAN_HUNTING_SCRIPT = `
   const job=q('job');
   if(!job)return;
   const ARAN_VALUE='아란 (풀콤보 기준)';
-  const STORAGE_KEY='planet-v22-aran-hunting-ui';
+  const STORAGE_KEY='planet-v22-aran-hunting-ui-v2';
   const weaponIds=['cur','a','b','c'];
+  const weaponNames={cur:'현재',a:'매물 A',b:'매물 B',c:'매물 C'};
 
   function renameAranDisplay(){
     const opt=Array.from(job.options).find(o=>o.value===ARAN_VALUE);
@@ -37,17 +45,6 @@ const ARAN_HUNTING_SCRIPT = `
       const ropt=Array.from(recoJob.options).find(o=>o.value===ARAN_VALUE);
       if(ropt&&ropt.textContent!=='아란 (사냥 기준)')ropt.textContent='아란 (사냥 기준)';
     }
-  }
-
-  function addAranBox(){
-    if(q('v22AranHuntingBox'))return;
-    const card=job.closest('section.card');
-    if(!card)return;
-    const box=document.createElement('div');
-    box.id='v22AranHuntingBox';
-    box.className='v22-aran-hunting-box';
-    box.innerHTML='<div class="v22-aran-hunting-grid"><div><label>아란 공속 비교</label><div class="small">각 무기 카드에서 보핑 / 디에스(핼버드) / 기타를 선택합니다.</div></div><label id="v22AranWindBoosterLabel" style="display:flex;align-items:center;gap:10px;margin:0;cursor:pointer"><input id="aranWindBooster" type="checkbox" checked style="width:auto;transform:scale(1.15);margin:0"><span><b>윈드부스터 ON</b><br><span class="small">디에스(핼버드) 선택 시에만 의미가 있습니다.</span></span></label></div><div class="v22-aran-hunting-note"><b>안내</b> · 보핑은 자버프로 풀공속으로 계산합니다. 공속 보정은 순수 공격 횟수 차이만 반영하며 콤보 수급 및 템페스트 사이클 변화는 제외합니다.</div>';
-    card.appendChild(box);
   }
 
   function addWeaponSelectors(){
@@ -76,28 +73,94 @@ const ARAN_HUNTING_SCRIPT = `
     details.open=false;
   }
 
+  function addResultPanel(){
+    const result=q('result'),compare=q('compare');
+    if(!result||!compare||q('v22AranSpeedResult'))return;
+    const panel=document.createElement('div');
+    panel.id='v22AranSpeedResult';
+    panel.className='v22-aran-speed-result';
+    panel.innerHTML='<h3>아란 공속 보정 비교</h3>'+
+      '<div class="v22-aran-speed-controls">'+
+        '<label class="v22-aran-speed-toggle"><input id="aranSpeedCorrection" type="checkbox" checked><span><b>공속 보정 ON</b><br><span class="small">OFF 시 기존 공격력·잠재 비교 결과 그대로</span></span></label>'+
+        '<label class="v22-aran-speed-toggle" id="aranWindBoosterLabel"><input id="aranWindBooster" type="checkbox"><span><b>윈드부스터 ON</b><br><span class="small">디에스(핼버드)와 비교할 때만 의미가 있습니다.</span></span></label>'+
+      '</div>'+
+      '<div id="v22AranSpeedSummary" class="small"></div>'+
+      '<div id="v22AranSpeedGrid" class="v22-aran-speed-grid"></div>'+
+      '<div id="v22AranSpeedWinner" class="v22-aran-speed-winner"></div>'+
+      '<div class="v22-aran-speed-note"><b>1차 추정 공속 배율</b> · 윈부 OFF: 보핑 ×1.263 / 디에스 ×1.000 · 윈부 ON: 보핑 ×1.105 / 디에스 ×1.000<br>※ 순수 공격속도에 따른 공격 횟수 차이만 반영합니다. 콤보 수급 속도 및 콤보 템페스트 사이클 변화는 제외합니다. 기타 무기는 공속 보정을 적용하지 않습니다.</div>';
+    compare.insertAdjacentElement('afterend',panel);
+  }
+
   function isAran(){return job.value===ARAN_VALUE}
   function visibleWeapon(id){const card=q(id+'Card');return !!card&&!card.classList.contains('hidden')}
-  function anyDs(){return weaponIds.some(id=>visibleWeapon(id)&&q('aranWeaponType_'+id)?.value==='ds')}
+  function typeOf(id){return q('aranWeaponType_'+id)?.value||'other'}
+  function typeLabel(type){return type==='bopping'?'보핑':type==='ds'?'디에스(핼버드)':'기타'}
+  function anyDs(){return weaponIds.some(id=>visibleWeapon(id)&&typeOf(id)==='ds')}
+
+  function speedMultiplier(id){
+    if(!q('aranSpeedCorrection')?.checked)return 1;
+    const type=typeOf(id);
+    if(type==='bopping')return q('aranWindBooster')?.checked?1.105:1.263;
+    return 1;
+  }
+
+  function metricRelative(name){
+    if(name==='현재')return 100;
+    const metrics=Array.from(document.querySelectorAll('#metrics .metric'));
+    const target=metrics.find(el=>(el.textContent||'').trim().startsWith(name));
+    if(!target)return null;
+    const b=target.querySelector('b');
+    const m=(b?.textContent||'').match(/(-?[0-9.]+)%/);
+    return m?parseFloat(m[1]):null;
+  }
+
+  function renderSpeedResult(){
+    const panel=q('v22AranSpeedResult');
+    if(!panel)return;
+    const show=isAran()&&q('result')?.style.display!=='none';
+    panel.style.display=show?'':'none';
+    if(!show)return;
+
+    const speedOn=!!q('aranSpeedCorrection')?.checked;
+    const wb=!!q('aranWindBooster')?.checked;
+    const wbLabel=q('aranWindBoosterLabel');
+    if(wbLabel)wbLabel.classList.toggle('v22-aran-muted',!anyDs());
+
+    const currentMult=speedMultiplier('cur')||1;
+    const rows=[];
+    let best={id:'cur',value:100};
+    weaponIds.forEach(id=>{
+      if(id!=='cur'&&!visibleWeapon(id))return;
+      const name=weaponNames[id];
+      const raw=metricRelative(name);
+      if(raw===null)return;
+      const mult=speedMultiplier(id);
+      const adjusted=raw*(mult/currentMult);
+      if(adjusted>best.value)best={id,value:adjusted};
+      rows.push('<div class="v22-aran-speed-item"><b>'+name+' · '+typeLabel(typeOf(id))+'</b><span class="small">공속 무보정 '+raw.toFixed(2)+'%<br>적용 배율 ×'+mult.toFixed(3)+'<br><strong>공속 반영 '+adjusted.toFixed(2)+'%</strong></span></div>');
+    });
+
+    q('v22AranSpeedSummary').innerHTML=speedOn
+      ?'공속 보정 <b>ON</b> · 윈드부스터 <b>'+(wb?'ON':'OFF')+'</b> · 현재 무기의 공속 배율을 100% 기준으로 상대 환산합니다.'
+      :'공속 보정 <b>OFF</b> · 기존 공격력 / 공% / 총데미지 / 크확 비교값만 표시합니다.';
+    q('v22AranSpeedGrid').innerHTML=rows.join('');
+    const bestName=weaponNames[best.id];
+    q('v22AranSpeedWinner').textContent=speedOn?'공속 보정 반영 최종 우세: '+bestName+' · '+best.value.toFixed(2)+'%':'공속 보정 OFF · 기존 비교 결과를 사용합니다.';
+  }
 
   function sync(){
     renameAranDisplay();
     const on=isAran();
-    const box=q('v22AranHuntingBox');
-    if(box)box.style.display=on?'':'none';
     document.querySelectorAll('[data-aran-weapon-field="1"]').forEach(el=>{el.style.display=on?'':'none'});
-    const wb=q('aranWindBooster'),label=q('v22AranWindBoosterLabel');
-    if(wb&&label){
-      const relevant=on&&anyDs();
-      wb.disabled=!relevant;
-      label.classList.toggle('v22-aran-wb-muted',!relevant);
-    }
+    const panel=q('v22AranSpeedResult');
+    if(panel&&!on)panel.style.display='none';
+    renderSpeedResult();
   }
 
   function save(){
     try{
-      const data={windBooster:!!q('aranWindBooster')?.checked,weapons:{}};
-      weaponIds.forEach(id=>{data.weapons[id]=q('aranWeaponType_'+id)?.value||'bopping'});
+      const data={speedCorrection:!!q('aranSpeedCorrection')?.checked,windBooster:!!q('aranWindBooster')?.checked,weapons:{}};
+      weaponIds.forEach(id=>{data.weapons[id]=typeOf(id)});
       localStorage.setItem(STORAGE_KEY,JSON.stringify(data));
     }catch(e){}
   }
@@ -106,6 +169,7 @@ const ARAN_HUNTING_SCRIPT = `
     try{
       const raw=localStorage.getItem(STORAGE_KEY);if(!raw)return;
       const data=JSON.parse(raw);
+      if(q('aranSpeedCorrection')&&typeof data.speedCorrection==='boolean')q('aranSpeedCorrection').checked=data.speedCorrection;
       if(q('aranWindBooster')&&typeof data.windBooster==='boolean')q('aranWindBooster').checked=data.windBooster;
       weaponIds.forEach(id=>{
         const el=q('aranWeaponType_'+id),v=data.weapons?.[id];
@@ -115,16 +179,17 @@ const ARAN_HUNTING_SCRIPT = `
   }
 
   renameAranDisplay();
-  addAranBox();
   addWeaponSelectors();
   wrapRecommendation();
+  addResultPanel();
   restore();
   sync();
 
   job.addEventListener('change',sync);
   document.addEventListener('change',e=>{
-    if(e.target.id==='aranWindBooster'||e.target.id?.startsWith('aranWeaponType_')){save();sync();}
+    if(e.target.id==='aranSpeedCorrection'||e.target.id==='aranWindBooster'||e.target.id?.startsWith('aranWeaponType_')){save();renderSpeedResult();}
   });
+  q('calc')?.addEventListener('click',()=>setTimeout(renderSpeedResult,0));
   q('addCompare')?.addEventListener('click',()=>requestAnimationFrame(sync));
   document.querySelector('#weapons')?.addEventListener('click',()=>requestAnimationFrame(sync));
 })();
