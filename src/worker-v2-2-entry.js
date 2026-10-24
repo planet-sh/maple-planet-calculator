@@ -3,15 +3,51 @@ import app from './worker-v2-2.js';
 const CAPTAIN_SHARE_STYLE = `
 <style id="v22CaptainShareStyle">
 main{max-width:1540px!important;padding-left:24px!important;padding-right:24px!important}
-.v22-summary-layout{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(380px,.85fr);gap:18px;align-items:start;margin-top:14px}
+.v22-summary-layout{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(380px,.85fr);gap:12px;align-items:start;margin-top:8px}
 .v22-summary-layout>#result{margin:0!important;min-width:0}
-.v22-summary-panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;min-width:0}
-.v22-summary-panel h2{margin:0 0 8px}
-.v22-summary-panel textarea{width:100%;min-height:260px;resize:vertical;line-height:1.65;font-size:14px;white-space:pre-wrap;background:var(--input);color:var(--text);border:1px solid var(--line);border-radius:12px;padding:14px;font-family:inherit;box-shadow:none;outline:none}
+.v22-summary-panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;min-width:0}
+.v22-summary-panel h2{margin:0 0 5px}
+.v22-summary-panel textarea{width:100%;min-height:220px;resize:vertical;line-height:1.5;font-size:13px;white-space:pre-wrap;background:var(--input);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px;font-family:inherit;box-shadow:none;outline:none}
 .v22-summary-panel textarea:focus{border-color:var(--accent)}
-.v22-summary-copy{width:100%;margin-top:10px;background:var(--panel2);color:var(--text);border:1px solid var(--line)}
+.v22-summary-copy{width:100%;margin-top:7px;background:var(--panel2);color:var(--text);border:1px solid var(--line)}
 .v22-summary-copy:hover{background:var(--accent);color:var(--accentText)}
 .v22-summary-copy.copied{background:var(--good);color:#081126}
+
+@media(min-width:1181px){
+  main{padding-top:12px!important;padding-bottom:28px!important}
+  .topnav{margin-bottom:10px!important;padding:4px!important;gap:5px!important;border-radius:10px!important}
+  .topnav a{padding:8px!important;border-radius:8px!important;font-size:13px!important}
+  h1{font-size:22px!important;margin:0 0 2px!important}
+  .sub{margin-bottom:10px!important;font-size:12px!important}
+  .card{padding:12px!important;margin:8px 0!important;border-radius:12px!important}
+  .card h2{font-size:18px!important;margin:0 0 8px!important}
+  .card h3{font-size:15px!important;margin-top:12px!important;margin-bottom:6px!important}
+  .grid{gap:8px!important}
+  label{font-size:11px!important;margin:4px 0 3px!important}
+  input,select{padding:8px 9px!important;font-size:14px!important;border-radius:8px!important;min-height:34px!important}
+  button{padding:9px 13px!important;font-size:13px!important;border-radius:9px!important}
+  .primary{margin-top:8px!important}
+  .secondary{padding:8px 12px!important}
+  .danger{padding:6px 8px!important;font-size:11px!important}
+  .metric{padding:9px 10px!important;margin-top:6px!important;border-radius:9px!important}
+  .metric b{font-size:18px!important;margin-top:2px!important}
+  .small{font-size:11px!important;line-height:1.4!important}
+  .toggle{padding:8px 10px!important;border-radius:9px!important;gap:8px!important}
+  .item-row{gap:6px!important;margin-top:5px!important}
+  .flow{gap:7px!important;margin:8px 0!important}
+  .flow>div{padding:8px!important;border-radius:9px!important}
+  .flow b{margin-bottom:2px!important}
+  .section-note{padding:7px 9px!important;margin-top:6px!important;border-radius:6px!important}
+  table{margin-top:6px!important;font-size:11px!important}
+  th,td{padding:5px 6px!important}
+  #saleItemsWrap{margin-top:7px!important}
+  #saleItemsWrap>button{margin-top:6px!important}
+  #receivedWrap{margin-top:7px!important}
+  #weightedFields>.grid,#routeRepFields>.grid,#directWeightedFields>.grid{margin-top:7px!important}
+  #directTradeCard h3[style]{margin-top:12px!important}
+  .v22-summary-panel{padding:12px!important}
+}
+
 @media(max-width:1180px){main{max-width:980px!important;padding-left:16px!important;padding-right:16px!important}.v22-summary-layout{grid-template-columns:1fr}.v22-summary-panel textarea{min-height:220px}}
 </style>`;
 
@@ -113,7 +149,7 @@ export default {
     if(captainPath) html=patchCaptain(html);
     html=patchPreviewBadge(html,previewLabel(url.hostname));
     const headers=new Headers(response.headers);headers.delete('content-length');headers.delete('etag');
-    if(captainPath){headers.set('x-planet-captain-share','v22-inline-panel-wide');headers.set('x-planet-route','captain-worker-first');}
+    if(captainPath){headers.set('x-planet-captain-share','v22-compact-desktop');headers.set('x-planet-route','captain-worker-first');}
     return new Response(html,{status:response.status,statusText:response.statusText,headers});
   }
 };
