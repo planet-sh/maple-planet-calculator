@@ -2,14 +2,44 @@ import app from './worker-v2-2-aran-result-banner.js';
 
 const ARAN_CONVERT_STYLE=`
 <style id="v22AranConvertStyle">
-#aranConvertField{display:none}
-#aranConvertResult{display:none;margin-top:14px;padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--panel2)}
-#aranConvertResult h3{margin:0 0 8px;font-size:16px}
-.aran-convert-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}
-.aran-convert-item{padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--input)}
-.aran-convert-item b{display:block;font-size:20px;margin-top:4px;color:var(--good)}
-.aran-convert-note{margin-top:10px;font-size:12px;line-height:1.65;color:var(--muted)}
-@media(max-width:700px){.aran-convert-grid{grid-template-columns:1fr}}
+#aranConvertResult{display:none;margin-top:10px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--panel2)}
+#aranConvertResult h3{margin:0 0 6px;font-size:15px}
+.aran-convert-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:8px}
+.aran-convert-item{padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:var(--input)}
+.aran-convert-item b{display:block;font-size:19px;margin-top:3px;color:var(--good)}
+.aran-convert-note{margin-top:8px;font-size:11px;line-height:1.55;color:var(--muted)}
+
+/* 환산스공 PC 압축 레이아웃 */
+@media(min-width:821px){
+  body main{max-width:1180px;padding-top:14px}
+  main>.topnav{margin-bottom:10px}
+  main>h1{font-size:22px;margin-bottom:3px}
+  main>.sub{margin-bottom:10px;font-size:13px}
+  #convertTopGrid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(320px,.75fr);gap:10px;align-items:start;margin-bottom:10px}
+  #convertTopGrid>.card{margin:0;padding:13px}
+  #convertTopGrid h2{font-size:18px;margin:0 0 8px}
+  #convertTopGrid label{margin:5px 0 3px;font-size:12px}
+  #convertTopGrid input,#convertTopGrid select{padding:8px 10px;font-size:14px}
+  #convertTopGrid .grid{gap:8px 10px}
+  #convertTopGrid .note{margin-top:7px;padding:7px 9px;line-height:1.45}
+  #convertTopGrid .quick{margin-top:7px;gap:5px}
+  #convertTopGrid .quick button{padding:6px 9px;font-size:12px}
+  main>details.card{margin:8px 0;padding:10px 13px}
+  main>#calc{margin-top:8px;padding:10px 16px}
+  #result.card{margin-top:10px;padding:13px}
+  #result h2{margin:0 0 8px;font-size:18px}
+  #result .hero{padding:12px;margin-top:6px}
+  #result .hero b{font-size:28px}
+  #result .metric{padding:9px 10px}
+  #result .metric b{font-size:18px}
+  #result h3{font-size:15px;margin:10px 0 6px}
+  #result .line{padding:6px 0}
+  #result .formula{padding:8px 10px}
+}
+@media(max-width:820px){
+  #convertTopGrid{display:block}
+  .aran-convert-grid{grid-template-columns:1fr}
+}
 </style>`;
 
 const ARAN_CONVERT_SCRIPT=`
@@ -18,24 +48,27 @@ const ARAN_CONVERT_SCRIPT=`
   const $=id=>document.getElementById(id);
   const ARAN_VALUE='아란 (풀콤보 기준)';
   const fmt=n=>Math.round(n).toLocaleString('ko-KR');
-  const SPEED={bopping:1,dsNoWb:.792,dsWb:.905};
+  const SPEED={bopping:1,dsWb:.905,dsNoWb:.792};
   const job=$('job');
   if(!job)return;
+
+  const statLabel=$('stat')?.previousElementSibling;
+  const originalStatLabel=statLabel?.textContent||'현재 표시 스공';
 
   function isAran(){return job.value===ARAN_VALUE}
   function renameAran(){
     const opt=Array.from(job.options).find(o=>o.value===ARAN_VALUE);
     if(opt)opt.textContent='아란 (사냥 기준)';
+    if(statLabel)statLabel.textContent=isAran()?'현재 표시 스공 (보핑 기준)':originalStatLabel;
   }
-  function addField(){
-    if($('aranConvertField'))return;
-    const sharp=$('sharp');
-    const grid=sharp?.closest('.grid');
-    if(!grid)return;
+  function compactLayout(){
+    if($('convertTopGrid'))return;
+    const cards=Array.from(document.querySelectorAll('main > section.card')).filter(el=>el.id!=='result');
+    if(cards.length<2)return;
     const wrap=document.createElement('div');
-    wrap.id='aranConvertField';
-    wrap.innerHTML='<label>현재 무기 기준</label><select id="aranConvertWeapon"><option value="bopping">보핑</option><option value="ds">디에스(핼버드)</option></select>';
-    grid.appendChild(wrap);
+    wrap.id='convertTopGrid';
+    cards[0].before(wrap);
+    wrap.append(cards[0],cards[1]);
   }
   function addGuide(){
     if($('aranConvertGuide'))return;
@@ -45,7 +78,7 @@ const ARAN_CONVERT_SCRIPT=`
     guide.id='aranConvertGuide';
     guide.className='note small';
     guide.style.display='none';
-    guide.innerHTML='<b>아란 무기 공속 환산</b> · 현재 입력한 무기를 기준으로, 보핑/디에스의 공격속도 차이를 반영해 <b>동일 기대화력이 되는 상대 무기의 환산스공</b>을 역산합니다.<br>보핑은 자버프로 풀공속 기준이며, 디에스는 바이퍼(윈드부스터) 유무를 나누어 표시합니다. 순수 공격 횟수 차이만 반영하며 콤보 수급 및 템페스트 사이클 변화는 제외합니다.';
+    guide.innerHTML='<b>아란 환산 기준</b> · 입력한 표시 스공은 <b>보핑 기준 환산</b>으로 사용합니다. 보핑을 공격속도 기준점 ×1.000으로 두고, 동일 기대화력이 되려면 디에스가 어느 정도 환산스공이 필요한지 바이퍼(윈드부스터) O/X로 역산합니다.<br>※ 순수 공격 횟수 차이만 반영하며 콤보 수급 속도와 콤보 템페스트 사이클 변화는 제외합니다.';
     note.insertAdjacentElement('afterend',guide);
   }
   function addResult(){
@@ -54,7 +87,7 @@ const ARAN_CONVERT_SCRIPT=`
     if(!hero)return;
     const box=document.createElement('div');
     box.id='aranConvertResult';
-    box.innerHTML='<h3>아란 무기별 동급 환산</h3><div id="aranConvertSummary" class="small"></div><div id="aranConvertGrid" class="aran-convert-grid"></div><div class="aran-convert-note">※ 보핑 ×1.000 · 디에스(바이퍼 X) ×0.792 · 디에스(바이퍼 O) ×0.905 기준의 1차 추정치입니다.</div>';
+    box.innerHTML='<h3>아란 무기별 동급 환산</h3><div id="aranConvertSummary" class="small"></div><div id="aranConvertGrid" class="aran-convert-grid"></div><div class="aran-convert-note">※ 공속 기준: 보핑 ×1.000 · 디에스(바이퍼 O) ×0.905 · 디에스(바이퍼 X) ×0.792</div>';
     hero.insertAdjacentElement('afterend',box);
   }
   function baseConverted(){
@@ -63,41 +96,28 @@ const ARAN_CONVERT_SCRIPT=`
   }
   function render(){
     const on=isAran();
-    const field=$('aranConvertField'),guide=$('aranConvertGuide'),box=$('aranConvertResult');
-    if(field)field.style.display=on?'':'none';
+    renameAran();
+    const guide=$('aranConvertGuide'),box=$('aranConvertResult');
     if(guide)guide.style.display=on?'':'none';
     if(!box)return;
     const result=$('result');
-    const show=on&&result&&result.style.display!=='none'&&baseConverted()>0;
+    const base=baseConverted();
+    const show=on&&result&&result.style.display!=='none'&&base>0;
     box.style.display=show?'':'none';
     if(!show)return;
-    const base=baseConverted();
-    const weapon=$('aranConvertWeapon')?.value||'bopping';
-    let summary='',items=[];
-    if(weapon==='bopping'){
-      const dsNo=base/SPEED.dsNoWb,dsWb=base/SPEED.dsWb;
-      summary='현재 무기 기준: <b>보핑</b> · 현재 보핑 환산을 기준점으로 동일 기대화력의 디에스 환산을 역산합니다.';
-      items=[
-        ['현재 보핑 환산',base],
-        ['디에스 환산 · 바이퍼 X',dsNo],
-        ['디에스 환산 · 바이퍼 O',dsWb]
-      ];
-    }else{
-      const bopFromNo=base*SPEED.dsNoWb,bopFromWb=base*SPEED.dsWb;
-      summary='현재 무기 기준: <b>디에스(핼버드)</b> · 현재 디에스 환산을 기준점으로 바이퍼 유무별 동급 보핑 환산을 역산합니다.';
-      items=[
-        ['현재 디에스 환산',base],
-        ['동급 보핑 · 바이퍼 X 기준',bopFromNo],
-        ['동급 보핑 · 바이퍼 O 기준',bopFromWb]
-      ];
-    }
-    $('aranConvertSummary').innerHTML=summary;
-    $('aranConvertGrid').innerHTML=items.map(([label,value])=>'<div class="aran-convert-item"><span class="small">'+label+'</span><b>'+fmt(value)+'</b></div>').join('');
+
+    const dsWb=base/SPEED.dsWb;
+    const dsNoWb=base/SPEED.dsNoWb;
+    $('aranConvertSummary').innerHTML='현재 계산된 <b>보핑 환산 '+fmt(base)+'</b>을 기준으로 동일 기대화력의 디에스 요구 환산스공을 역산합니다.';
+    $('aranConvertGrid').innerHTML=[
+      ['보핑 환산',base],
+      ['디에스 환산 · 바이퍼 O',dsWb],
+      ['디에스 환산 · 바이퍼 X',dsNoWb]
+    ].map(([label,value])=>'<div class="aran-convert-item"><span class="small">'+label+'</span><b>'+fmt(value)+'</b></div>').join('');
   }
 
-  renameAran();addField();addGuide();addResult();render();
-  job.addEventListener('change',()=>{renameAran();render()});
-  $('aranConvertWeapon')?.addEventListener('change',render);
+  compactLayout();renameAran();addGuide();addResult();render();
+  job.addEventListener('change',render);
   $('calc')?.addEventListener('click',()=>setTimeout(render,0));
 })();
 </script>`;
@@ -119,7 +139,7 @@ export default {
     const headers=new Headers(response.headers);
     headers.delete('content-length');
     headers.delete('etag');
-    headers.set('x-planet-aran-convert','weapon-speed-draft');
+    headers.set('x-planet-aran-convert','bopping-baseline-compact');
     return new Response(html,{status:response.status,statusText:response.statusText,headers});
   }
 };
