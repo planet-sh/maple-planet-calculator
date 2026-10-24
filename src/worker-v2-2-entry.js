@@ -3,8 +3,7 @@ import app from './worker-v2-2.js';
 const CAPTAIN_SHARE_STYLE = `
 <style id="v22CaptainShareStyle">
 .v22-share-copy{width:100%;margin:8px 0 14px;background:var(--panel2);color:var(--text);border:1px solid var(--line)}
-.v22-share-copy:not(:disabled):hover{background:var(--accent);color:var(--accentText)}
-.v22-share-copy:disabled{opacity:.48;cursor:not-allowed}
+.v22-share-copy:hover{background:var(--accent);color:var(--accentText)}
 .v22-share-copy.copied{background:var(--good);color:#081126}
 </style>`;
 
@@ -28,6 +27,14 @@ const CAPTAIN_SHARE_SCRIPT = `
       button.textContent='✅ 복사됨';button.classList.add('copied');
       setTimeout(()=>{button.textContent=old;button.classList.remove('copied')},1400);
     }catch(e){alert('복사에 실패했습니다. 브라우저의 클립보드 권한을 확인해주세요.')}
+  }
+
+  function hasCalculatedNormal(){
+    return num(q('normalTake')?.textContent)>0||num(q('saleItemTotal')?.textContent)>0||num(q('receivedAmount')?.value)>0;
+  }
+
+  function hasCalculatedDirect(){
+    return num(q('directSellerNet')?.textContent)>0||num(q('directBudget')?.textContent)>0||num(q('marketPrice')?.value)>0;
   }
 
   function normalSummary(){
@@ -66,28 +73,28 @@ const CAPTAIN_SHARE_SCRIPT = `
 
   const normalBtn=q('copySettlementSummary');
   const directBtn=q('copyDirectSummary');
-  const hasCalculatedNormal=()=>num(q('normalTake')?.textContent)>0||num(q('saleItemTotal')?.textContent)>0||num(q('receivedAmount')?.value)>0;
-  const hasCalculatedDirect=()=>num(q('directSellerNet')?.textContent)>0||num(q('directBudget')?.textContent)>0||num(q('marketPrice')?.value)>0;
-  const sync=()=>{
-    if(normalBtn) normalBtn.disabled=!hasCalculatedNormal();
-    if(directBtn) directBtn.disabled=!hasCalculatedDirect();
-  };
-  normalBtn?.addEventListener('click',()=>{if(!normalBtn.disabled)copy(normalSummary(),normalBtn)});
-  directBtn?.addEventListener('click',()=>{if(!directBtn.disabled)copy(directSummary(),directBtn)});
-  q('calc')?.addEventListener('click',()=>setTimeout(sync,0));
-  q('calcDirect')?.addEventListener('click',()=>setTimeout(sync,0));
-  new MutationObserver(sync).observe(document.body,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['style','class']});
-  sync();
+  normalBtn?.addEventListener('click',()=>{
+    if(!hasCalculatedNormal()) return alert('먼저 일반 정산을 계산해주세요.');
+    copy(normalSummary(),normalBtn);
+  });
+  directBtn?.addEventListener('click',()=>{
+    if(!hasCalculatedDirect()) return alert('먼저 직거래 정산을 계산해주세요.');
+    copy(directSummary(),directBtn);
+  });
 })();
 </script>`;
 
 function patchCaptain(html){
   if(!html.includes('id="v22CaptainShareStyle"')) html=html.replace('</head>',CAPTAIN_SHARE_STYLE+'</head>');
   if(!html.includes('id="copySettlementSummary"')){
-    html=html.replace(/(<button[^>]*id="calc"[^>]*>[\s\S]*?<\/button>)/i,'$1<button id="copySettlementSummary" type="button" class="v22-share-copy" disabled>📋 디스코드용 정산 요약 복사</button>');
+    html=html.replace(/(<button[^>]*id="calc"[^>]*>[\s\S]*?<\/button>)/i,'$1<button id="copySettlementSummary" type="button" class="v22-share-copy">📋 디스코드용 정산 요약 복사</button>');
+  }else{
+    html=html.replace(/(<button[^>]*id="copySettlementSummary"[^>]*)\sdisabled(>)/i,'$1$2');
   }
   if(!html.includes('id="copyDirectSummary"')){
-    html=html.replace(/(<button[^>]*id="calcDirect"[^>]*>[\s\S]*?<\/button>)/i,'$1<button id="copyDirectSummary" type="button" class="v22-share-copy" disabled>📋 디스코드용 직거래 요약 복사</button>');
+    html=html.replace(/(<button[^>]*id="calcDirect"[^>]*>[\s\S]*?<\/button>)/i,'$1<button id="copyDirectSummary" type="button" class="v22-share-copy">📋 디스코드용 직거래 요약 복사</button>');
+  }else{
+    html=html.replace(/(<button[^>]*id="copyDirectSummary"[^>]*)\sdisabled(>)/i,'$1$2');
   }
   if(!html.includes('id="v22CaptainShareScript"')) html=html.replace('</body>',CAPTAIN_SHARE_SCRIPT+'</body>');
   return html;
