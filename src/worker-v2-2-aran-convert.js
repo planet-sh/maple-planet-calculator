@@ -15,7 +15,6 @@ const ARAN_CONVERT_STYLE=`
 #aranSpeedCard .speed-row b{color:var(--good)}
 #aranSpeedCard .speed-hint{margin-top:8px;padding:7px 9px;border-left:3px solid var(--accent);background:var(--input);border-radius:8px;font-size:11px;line-height:1.45;color:var(--muted)}
 
-/* 환산스공 PC 압축 레이아웃 */
 @media(min-width:821px){
   body main{max-width:1240px;padding-top:14px}
   main>.topnav{margin-bottom:10px}
@@ -53,7 +52,6 @@ const ARAN_CONVERT_SCRIPT=`
 <script id="v22AranConvertScript">
 (()=>{
   const $=id=>document.getElementById(id);
-  const ARAN_VALUE='아란 (풀콤보 기준)';
   const fmt=n=>Math.round(n).toLocaleString('ko-KR');
   const SPEED={bopping:1,dsWb:.905,dsNoWb:.792};
   const NEED={wb:(1/SPEED.dsWb-1)*100,noWb:(1/SPEED.dsNoWb-1)*100};
@@ -63,10 +61,15 @@ const ARAN_CONVERT_SCRIPT=`
   const statLabel=$('stat')?.previousElementSibling;
   const originalStatLabel=statLabel?.textContent||'현재 표시 스공';
 
-  function isAran(){return job.value===ARAN_VALUE}
+  function isAran(){
+    const value=(job.value||'').toLowerCase();
+    const text=(job.options[job.selectedIndex]?.textContent||'').toLowerCase();
+    return value.includes('아란')||text.includes('아란');
+  }
   function renameAran(){
-    const opt=Array.from(job.options).find(o=>o.value===ARAN_VALUE);
-    if(opt)opt.textContent='아란 (사냥 기준)';
+    Array.from(job.options).forEach(opt=>{
+      if((opt.value||'').includes('아란')||(opt.textContent||'').includes('아란')) opt.textContent='아란 (사냥 기준)';
+    });
     if(statLabel)statLabel.textContent=isAran()?'현재 표시 스공 (보핑 기준)':originalStatLabel;
   }
   function addSpeedCard(){
@@ -133,7 +136,8 @@ const ARAN_CONVERT_SCRIPT=`
 
     if(!box)return;
     const result=$('result');
-    const show=on&&result&&result.style.display!=='none'&&base>0;
+    const visible=result&&getComputedStyle(result).display!=='none';
+    const show=on&&visible&&base>0;
     box.style.display=show?'':'none';
     if(!show)return;
 
@@ -147,8 +151,12 @@ const ARAN_CONVERT_SCRIPT=`
   }
 
   compactLayout();renameAran();addGuide();addResult();render();
-  job.addEventListener('change',render);
-  $('calc')?.addEventListener('click',()=>setTimeout(render,0));
+  job.addEventListener('change',()=>setTimeout(render,0));
+  $('calc')?.addEventListener('click',()=>setTimeout(render,10));
+  const converted=$('converted');
+  if(converted){
+    new MutationObserver(()=>setTimeout(render,0)).observe(converted,{childList:true,characterData:true,subtree:true});
+  }
 })();
 </script>`;
 
@@ -169,7 +177,7 @@ export default {
     const headers=new Headers(response.headers);
     headers.delete('content-length');
     headers.delete('etag');
-    headers.set('x-planet-aran-convert','bopping-baseline-three-column');
+    headers.set('x-planet-aran-convert','bopping-baseline-three-column-v2');
     return new Response(html,{status:response.status,statusText:response.statusText,headers});
   }
 };
