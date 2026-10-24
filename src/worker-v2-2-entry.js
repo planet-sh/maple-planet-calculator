@@ -2,15 +2,17 @@ import app from './worker-v2-2.js';
 
 const CAPTAIN_SHARE_STYLE = `
 <style id="v22CaptainShareStyle">
-.v22-summary-layout{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(320px,.85fr);gap:16px;align-items:start;margin-top:14px}
-.v22-summary-layout>#result{margin:0!important}
+main{max-width:1540px!important;padding-left:24px!important;padding-right:24px!important}
+.v22-summary-layout{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(380px,.85fr);gap:18px;align-items:start;margin-top:14px}
+.v22-summary-layout>#result{margin:0!important;min-width:0}
 .v22-summary-panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;min-width:0}
-.v22-summary-panel h2{margin-top:0}
-.v22-summary-panel textarea{width:100%;min-height:310px;resize:vertical;line-height:1.65;font-size:14px;white-space:pre-wrap}
+.v22-summary-panel h2{margin:0 0 8px}
+.v22-summary-panel textarea{width:100%;min-height:260px;resize:vertical;line-height:1.65;font-size:14px;white-space:pre-wrap;background:var(--input);color:var(--text);border:1px solid var(--line);border-radius:12px;padding:14px;font-family:inherit;box-shadow:none;outline:none}
+.v22-summary-panel textarea:focus{border-color:var(--accent)}
 .v22-summary-copy{width:100%;margin-top:10px;background:var(--panel2);color:var(--text);border:1px solid var(--line)}
 .v22-summary-copy:hover{background:var(--accent);color:var(--accentText)}
 .v22-summary-copy.copied{background:var(--good);color:#081126}
-@media(max-width:1050px){.v22-summary-layout{grid-template-columns:1fr}.v22-summary-panel textarea{min-height:220px}}
+@media(max-width:1180px){main{max-width:980px!important;padding-left:16px!important;padding-right:16px!important}.v22-summary-layout{grid-template-columns:1fr}.v22-summary-panel textarea{min-height:220px}}
 </style>`;
 
 const CAPTAIN_SHARE_SCRIPT = `
@@ -111,7 +113,7 @@ export default {
     if(captainPath) html=patchCaptain(html);
     html=patchPreviewBadge(html,previewLabel(url.hostname));
     const headers=new Headers(response.headers);headers.delete('content-length');headers.delete('etag');
-    if(captainPath){headers.set('x-planet-captain-share','v22-inline-panel');headers.set('x-planet-route','captain-worker-first');}
+    if(captainPath){headers.set('x-planet-captain-share','v22-inline-panel-wide');headers.set('x-planet-route','captain-worker-first');}
     return new Response(html,{status:response.status,statusText:response.statusText,headers});
   }
 };
