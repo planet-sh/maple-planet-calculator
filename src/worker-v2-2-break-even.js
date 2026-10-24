@@ -87,7 +87,7 @@ const ARAN_HUNTING_SCRIPT = `
       '<div id="v22AranSpeedSummary" class="small"></div>'+
       '<div id="v22AranSpeedGrid" class="v22-aran-speed-grid"></div>'+
       '<div id="v22AranSpeedWinner" class="v22-aran-speed-winner"></div>'+
-      '<div class="v22-aran-speed-note"><b>1차 추정 공속 배율</b> · 윈부 OFF: 보핑 ×1.263 / 디에스 ×1.000 · 윈부 ON: 보핑 ×1.105 / 디에스 ×1.000<br>※ 순수 공격속도에 따른 공격 횟수 차이만 반영합니다. 콤보 수급 속도 및 콤보 템페스트 사이클 변화는 제외합니다. 기타 무기는 공속 보정을 적용하지 않습니다.</div>';
+      '<div class="v22-aran-speed-note"><b>1차 추정 공속 배율</b> · 보핑은 항상 ×1.000 · 디에스는 윈부 OFF ×0.792 / 윈부 ON ×0.905<br>※ 보핑은 자버프로 풀공속에 도달하는 것으로 계산합니다. 순수 공격속도에 따른 공격 횟수 차이만 반영하며, 콤보 수급 속도 및 콤보 템페스트 사이클 변화는 제외합니다. 기타 무기는 공속 보정을 적용하지 않습니다.</div>';
     compare.insertAdjacentElement('afterend',panel);
   }
 
@@ -100,7 +100,8 @@ const ARAN_HUNTING_SCRIPT = `
   function speedMultiplier(id){
     if(!q('aranSpeedCorrection')?.checked)return 1;
     const type=typeOf(id);
-    if(type==='bopping')return q('aranWindBooster')?.checked?1.105:1.263;
+    if(type==='bopping')return 1;
+    if(type==='ds')return q('aranWindBooster')?.checked?0.905:0.792;
     return 1;
   }
 
@@ -141,7 +142,7 @@ const ARAN_HUNTING_SCRIPT = `
     });
 
     q('v22AranSpeedSummary').innerHTML=speedOn
-      ?'공속 보정 <b>ON</b> · 윈드부스터 <b>'+(wb?'ON':'OFF')+'</b> · 현재 무기의 공속 배율을 100% 기준으로 상대 환산합니다.'
+      ?'공속 보정 <b>ON</b> · 윈드부스터 <b>'+(wb?'ON':'OFF')+'</b> · 보핑 ×1.000을 기준으로 디에스의 공속 손실을 상대 반영합니다.'
       :'공속 보정 <b>OFF</b> · 기존 공격력 / 공% / 총데미지 / 크확 비교값만 표시합니다.';
     q('v22AranSpeedGrid').innerHTML=rows.join('');
     const bestName=weaponNames[best.id];
