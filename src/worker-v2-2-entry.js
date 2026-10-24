@@ -90,17 +90,33 @@ function patchCaptain(html){
   return html;
 }
 
+function canonicalRequest(request){
+  const url=new URL(request.url);
+  if(url.pathname==='/captain'||url.pathname==='/captain/'){
+    url.pathname='/captain.html';
+    return new Request(url.toString(),request);
+  }
+  if(url.pathname==='/convert'||url.pathname==='/convert/'){
+    url.pathname='/convert.html';
+    return new Request(url.toString(),request);
+  }
+  return request;
+}
+
 export default {
   async fetch(request,env,ctx){
-    const response=await app.fetch(request,env,ctx);
-    const url=new URL(request.url);
+    const originalUrl=new URL(request.url);
+    const upstreamRequest=canonicalRequest(request);
+    const response=await app.fetch(upstreamRequest,env,ctx);
     const type=response.headers.get('content-type')||'';
-    if(url.pathname!=='/captain.html'||!type.includes('text/html')) return response;
+    const captainPath=originalUrl.pathname==='/captain'||originalUrl.pathname==='/captain/'||originalUrl.pathname==='/captain.html';
+    if(!captainPath||!type.includes('text/html')) return response;
     let html=await response.text();
     html=patchCaptain(html);
     const headers=new Headers(response.headers);
     headers.delete('content-length');headers.delete('etag');
     headers.set('x-planet-captain-share','v22');
+    headers.set('x-planet-route','captain-worker-first');
     return new Response(html,{status:response.status,statusText:response.statusText,headers});
   }
 };
