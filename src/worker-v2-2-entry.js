@@ -14,7 +14,7 @@ const CAPTAIN_SHARE_SCRIPT = `
   const q=id=>document.getElementById(id);
   const num=text=>Number(String(text||'').replace(/[^0-9.-]/g,''))||0;
   const fmt=n=>Math.floor(Number(n)||0).toLocaleString('ko-KR')+' mesos';
-  const url=()=>location.origin+'/captain.html';
+  const url=()=>location.origin+'/captain';
 
   async function copy(text,button){
     try{
@@ -90,31 +90,19 @@ function patchCaptain(html){
   return html;
 }
 
-function canonicalRequest(request){
-  const url=new URL(request.url);
-  if(url.pathname==='/captain'||url.pathname==='/captain/'){
-    url.pathname='/captain.html';
-    return new Request(url.toString(),request);
-  }
-  if(url.pathname==='/convert'||url.pathname==='/convert/'){
-    url.pathname='/convert.html';
-    return new Request(url.toString(),request);
-  }
-  return request;
-}
-
 export default {
   async fetch(request,env,ctx){
-    const originalUrl=new URL(request.url);
-    const upstreamRequest=canonicalRequest(request);
-    const response=await app.fetch(upstreamRequest,env,ctx);
+    const url=new URL(request.url);
+    const response=await app.fetch(request,env,ctx);
     const type=response.headers.get('content-type')||'';
-    const captainPath=originalUrl.pathname==='/captain'||originalUrl.pathname==='/captain/'||originalUrl.pathname==='/captain.html';
+    const captainPath=url.pathname==='/captain'||url.pathname==='/captain/'||url.pathname==='/captain.html';
     if(!captainPath||!type.includes('text/html')) return response;
+
     let html=await response.text();
     html=patchCaptain(html);
     const headers=new Headers(response.headers);
-    headers.delete('content-length');headers.delete('etag');
+    headers.delete('content-length');
+    headers.delete('etag');
     headers.set('x-planet-captain-share','v22');
     headers.set('x-planet-route','captain-worker-first');
     return new Response(html,{status:response.status,statusText:response.statusText,headers});
