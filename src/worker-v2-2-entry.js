@@ -58,6 +58,17 @@ main{max-width:1540px!important;padding-left:24px!important;padding-right:24px!i
   .v22-sale-items>#addSaleItem{grid-column:2;margin:0!important;align-self:end;white-space:nowrap}
   .v22-sale-items>.metric{grid-column:3;margin:0!important;min-height:52px;display:flex;flex-direction:column;justify-content:center}
   .v22-sale-items .item-row{margin-top:0!important}
+
+  .v22-direct-dashboard{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr) minmax(0,1fr);gap:8px;align-items:start;margin:8px 0}
+  .v22-direct-block{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px;min-width:0;height:100%}
+  .v22-direct-block h3{margin:0 0 7px!important;font-size:14px!important}
+  .v22-direct-block .grid{grid-template-columns:1fr 1fr!important}
+  .v22-direct-block .metric{margin-top:6px!important}
+  .v22-direct-block .section-note{margin-top:6px!important}
+  .v22-direct-block .toggle{margin-top:2px}
+  #directTradeCard>.flow{display:none!important}
+  #directTradeCard>#calcDirect{margin-top:8px!important}
+  #directResult>.grid{grid-template-columns:repeat(4,minmax(0,1fr))!important}
 }
 
 @media(max-width:1180px){
@@ -144,8 +155,38 @@ window.v22CaptainSummary=(function(){
     }
   }
 
+  function compactDirectDesktop(){
+    const card=q('directTradeCard');
+    if(!card||q('v22DirectDashboard'))return;
+    const heads=Array.from(card.querySelectorAll(':scope > h3'));
+    if(heads.length<3)return;
+    const calc=q('calcDirect');
+    const result=q('directResult');
+    if(!calc||!result)return;
+
+    const dashboard=document.createElement('div');
+    dashboard.id='v22DirectDashboard';
+    dashboard.className='v22-direct-dashboard';
+    card.insertBefore(dashboard,heads[0]);
+
+    const boundary=[heads[1],heads[2],calc];
+    heads.forEach((head,idx)=>{
+      const block=document.createElement('div');
+      block.className='v22-direct-block';
+      dashboard.appendChild(block);
+      let node=head;
+      const stop=boundary[idx];
+      while(node&&node!==stop){
+        const next=node.nextSibling;
+        block.appendChild(node);
+        node=next;
+      }
+    });
+  }
+
   function init(){
     compactDesktop();
+    compactDirectDesktop();
     const result=q('result');if(!result||q('v22SummaryPanel'))return;
     const wrap=document.createElement('div');wrap.className='v22-summary-layout';wrap.id='v22SummaryLayout';
     result.parentNode.insertBefore(wrap,result);wrap.appendChild(result);
@@ -197,7 +238,7 @@ export default {
     if(captainPath) html=patchCaptain(html);
     html=patchPreviewBadge(html,previewLabel(url.hostname));
     const headers=new Headers(response.headers);headers.delete('content-length');headers.delete('etag');
-    if(captainPath){headers.set('x-planet-captain-share','v22-top-row-123');headers.set('x-planet-route','captain-worker-first');}
+    if(captainPath){headers.set('x-planet-captain-share','v22-direct-dashboard');headers.set('x-planet-route','captain-worker-first');}
     return new Response(html,{status:response.status,statusText:response.statusText,headers});
   }
 };
