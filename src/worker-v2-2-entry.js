@@ -6,8 +6,8 @@ const CAPTAIN_SHARE_STYLE = `
 .v22-share-copy:hover{background:var(--accent);color:var(--accentText)}
 .v22-share-copy.copied{background:var(--good);color:#081126}
 .v22-copy-fallback{position:fixed;inset:0;z-index:100000;background:rgba(2,6,23,.72);display:flex;align-items:center;justify-content:center;padding:20px}
-.v22-copy-fallback>div{width:min(640px,100%);background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:0 20px 60px rgba(0,0,0,.4)}
-.v22-copy-fallback textarea{width:100%;min-height:260px;margin-top:10px;resize:vertical}
+.v22-copy-fallback>div{width:min(680px,100%);background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.v22-copy-fallback textarea{width:100%;min-height:280px;margin-top:10px;resize:vertical;line-height:1.6}
 .v22-copy-fallback-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:10px}
 </style>`;
 
@@ -18,13 +18,6 @@ const CAPTAIN_SHARE_SCRIPT = `
   const num=text=>Number(String(text||'').replace(/[^0-9.-]/g,''))||0;
   const fmt=n=>Math.floor(Number(n)||0).toLocaleString('ko-KR')+' mesos';
   const url=()=>location.origin+'/captain';
-
-  function markCopied(button){
-    const old=button.textContent;
-    button.textContent='✅ 복사됨';
-    button.classList.add('copied');
-    setTimeout(()=>{button.textContent=old;button.classList.remove('copied')},1400);
-  }
 
   function legacyCopy(text){
     const ta=document.createElement('textarea');
@@ -44,35 +37,40 @@ const CAPTAIN_SHARE_SCRIPT = `
     return ok;
   }
 
-  function showManualCopy(text){
+  function showSummaryPopup(text){
     q('v22CopyFallback')?.remove();
     const overlay=document.createElement('div');
     overlay.id='v22CopyFallback';
     overlay.className='v22-copy-fallback';
-    overlay.innerHTML='<div><b>복사할 정산 요약</b><div class="small" style="margin-top:4px">자동 복사가 막힌 브라우저에서는 아래 내용을 Ctrl+C로 복사해주세요.</div><textarea id="v22CopyFallbackText" readonly></textarea><div class="v22-copy-fallback-actions"><button type="button" class="secondary" id="v22CopyRetry">다시 복사</button><button type="button" class="primary" id="v22CopyClose" style="width:auto;margin:0">닫기</button></div></div>';
+    overlay.innerHTML='<div><b>📊 디스코드용 정산 요약</b><div class="small" style="margin-top:5px">아래 내용을 확인한 뒤 복사하세요. 자동 복사가 막히면 텍스트가 전체 선택된 상태로 남습니다.</div><textarea id="v22CopyFallbackText" readonly></textarea><div class="v22-copy-fallback-actions"><button type="button" class="secondary" id="v22CopyClose">닫기</button><button type="button" class="primary" id="v22CopyRetry" style="width:auto;margin:0">📋 복사</button></div></div>';
     document.body.appendChild(overlay);
     const ta=q('v22CopyFallbackText');
     ta.value=text;
     ta.focus();
     ta.select();
+    ta.setSelectionRange(0,ta.value.length);
     q('v22CopyClose').onclick=()=>overlay.remove();
     q('v22CopyRetry').onclick=()=>{
       ta.focus();ta.select();ta.setSelectionRange(0,ta.value.length);
-      if(legacyCopy(text)) overlay.remove();
+      if(legacyCopy(text)){
+        q('v22CopyRetry').textContent='✅ 복사됨';
+        setTimeout(()=>overlay.remove(),700);
+        return;
+      }
+      if(navigator.clipboard?.writeText){
+        navigator.clipboard.writeText(text).then(()=>{
+          q('v22CopyRetry').textContent='✅ 복사됨';
+          setTimeout(()=>overlay.remove(),700);
+        }).catch(()=>{
+          ta.focus();ta.select();ta.setSelectionRange(0,ta.value.length);
+          q('v22CopyRetry').textContent='Ctrl+C로 복사';
+        });
+      }else{
+        ta.focus();ta.select();ta.setSelectionRange(0,ta.value.length);
+        q('v22CopyRetry').textContent='Ctrl+C로 복사';
+      }
     };
     overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove()});
-  }
-
-  function copy(text,button){
-    if(legacyCopy(text)){
-      markCopied(button);
-      return;
-    }
-    if(navigator.clipboard?.writeText){
-      navigator.clipboard.writeText(text).then(()=>markCopied(button)).catch(()=>showManualCopy(text));
-      return;
-    }
-    showManualCopy(text);
   }
 
   function hasCalculatedNormal(){
@@ -121,11 +119,11 @@ const CAPTAIN_SHARE_SCRIPT = `
   const directBtn=q('copyDirectSummary');
   normalBtn?.addEventListener('click',()=>{
     if(!hasCalculatedNormal()) return alert('먼저 일반 정산을 계산해주세요.');
-    copy(normalSummary(),normalBtn);
+    showSummaryPopup(normalSummary());
   });
   directBtn?.addEventListener('click',()=>{
     if(!hasCalculatedDirect()) return alert('먼저 직거래 정산을 계산해주세요.');
-    copy(directSummary(),directBtn);
+    showSummaryPopup(directSummary());
   });
 })();
 </script>`;
