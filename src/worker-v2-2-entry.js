@@ -93,21 +93,40 @@ function patchCaptain(html){
   return html;
 }
 
+function previewLabel(hostname){
+  if(!hostname.endsWith('.workers.dev')) return null;
+  const prefix=hostname.split('.')[0];
+  if(prefix.startsWith('dev-maple-planet-calculator')) return 'DEV · branch';
+  const m=prefix.match(/^([a-f0-9]{8})-maple-planet-calculator$/i);
+  if(m) return 'DEV · '+m[1].toLowerCase();
+  return null;
+}
+
+function patchPreviewBadge(html,label){
+  if(!label||html.includes('id="v22DevBadge"')) return html;
+  const badge='<div id="v22DevBadge" style="position:fixed;right:14px;bottom:14px;z-index:99999;padding:7px 10px;border-radius:999px;background:rgba(9,15,30,.92);border:1px solid rgba(148,163,184,.35);color:#cbd5e1;font:700 11px/1.2 system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;letter-spacing:.02em;box-shadow:0 4px 18px rgba(0,0,0,.28);pointer-events:none">'+label+'</div>';
+  return html.replace('</body>',badge+'</body>');
+}
+
 export default {
   async fetch(request,env,ctx){
     const url=new URL(request.url);
     const response=await app.fetch(request,env,ctx);
     const type=response.headers.get('content-type')||'';
-    const captainPath=url.pathname==='/captain'||url.pathname==='/captain/'||url.pathname==='/captain.html';
-    if(!captainPath||!type.includes('text/html')) return response;
+    if(!type.includes('text/html')) return response;
 
+    const captainPath=url.pathname==='/captain'||url.pathname==='/captain/'||url.pathname==='/captain.html';
     let html=await response.text();
-    html=patchCaptain(html);
+    if(captainPath) html=patchCaptain(html);
+    html=patchPreviewBadge(html,previewLabel(url.hostname));
+
     const headers=new Headers(response.headers);
     headers.delete('content-length');
     headers.delete('etag');
-    headers.set('x-planet-captain-share','v22');
-    headers.set('x-planet-route','captain-worker-first');
+    if(captainPath){
+      headers.set('x-planet-captain-share','v22');
+      headers.set('x-planet-route','captain-worker-first');
+    }
     return new Response(html,{status:response.status,statusText:response.statusText,headers});
   }
 };
