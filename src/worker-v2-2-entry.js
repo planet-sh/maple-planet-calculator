@@ -40,15 +40,28 @@ main{max-width:1540px!important;padding-left:24px!important;padding-right:24px!i
   .section-note{padding:7px 9px!important;margin-top:6px!important;border-radius:6px!important}
   table{margin-top:6px!important;font-size:11px!important}
   th,td{padding:5px 6px!important}
-  #saleItemsWrap{margin-top:7px!important}
-  #saleItemsWrap>button{margin-top:6px!important}
-  #receivedWrap{margin-top:7px!important}
   #weightedFields>.grid,#routeRepFields>.grid,#directWeightedFields>.grid{margin-top:7px!important}
   #directTradeCard h3[style]{margin-top:12px!important}
   .v22-summary-panel{padding:12px!important}
+
+  .v22-sale-meta{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:2px}
+  .v22-sale-meta>div{min-width:0}
+  .v22-sale-items{display:grid!important;grid-template-columns:minmax(0,1fr) auto 220px;gap:8px;align-items:end;margin-top:8px!important}
+  .v22-sale-items>label{grid-column:1/-1;margin:0!important}
+  .v22-sale-items>#saleItems{grid-column:1;min-width:0}
+  .v22-sale-items>#addSaleItem{grid-column:2;margin:0!important;align-self:end;white-space:nowrap}
+  .v22-sale-items>.metric{grid-column:3;margin:0!important;min-height:52px;display:flex;flex-direction:column;justify-content:center}
+  .v22-sale-items .item-row{margin-top:0!important}
+  .v22-precalc-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:8px 0}
+  .v22-precalc-grid>.card{margin:0!important;height:100%}
+  .v22-precalc-grid .toggle{min-height:54px}
 }
 
-@media(max-width:1180px){main{max-width:980px!important;padding-left:16px!important;padding-right:16px!important}.v22-summary-layout{grid-template-columns:1fr}.v22-summary-panel textarea{min-height:220px}}
+@media(max-width:1180px){
+  main{max-width:980px!important;padding-left:16px!important;padding-right:16px!important}
+  .v22-summary-layout{grid-template-columns:1fr}
+  .v22-summary-panel textarea{min-height:220px}
+}
 </style>`;
 
 const CAPTAIN_SHARE_SCRIPT = `
@@ -97,7 +110,36 @@ window.v22CaptainSummary=(function(){
     else alert('선택된 텍스트를 Ctrl+C로 복사해주세요.');
   }
 
+  function compactDesktop(){
+    const saleItemsWrap=q('saleItemsWrap');
+    const members=q('members');
+    if(!saleItemsWrap||!members||q('v22SaleMeta'))return;
+    const saleCard=saleItemsWrap.closest('.card');
+    if(!saleCard)return;
+    const grids=Array.from(saleCard.children).filter(el=>el.classList&&el.classList.contains('grid'));
+    if(grids.length>=2){
+      const meta=document.createElement('div');meta.id='v22SaleMeta';meta.className='v22-sale-meta';
+      Array.from(grids[0].children).forEach(el=>meta.appendChild(el));
+      Array.from(grids[1].children).forEach(el=>meta.appendChild(el));
+      grids[0].remove();grids[1].remove();
+      saleCard.insertBefore(meta,saleItemsWrap);
+    }
+    saleItemsWrap.classList.add('v22-sale-items');
+
+    const cards=Array.from(document.querySelectorAll('main > section.card'));
+    const compactCards=cards.filter(card=>{
+      const t=card.querySelector('h2')?.textContent||'';
+      return /공금 차감|차등 분배|택배 수수료/.test(t);
+    });
+    if(compactCards.length>=2&&!q('v22PrecalcGrid')){
+      const wrap=document.createElement('div');wrap.id='v22PrecalcGrid';wrap.className='v22-precalc-grid';
+      const first=compactCards[0];first.parentNode.insertBefore(wrap,first);
+      compactCards.forEach(card=>wrap.appendChild(card));
+    }
+  }
+
   function init(){
+    compactDesktop();
     const result=q('result');if(!result||q('v22SummaryPanel'))return;
     const wrap=document.createElement('div');wrap.className='v22-summary-layout';wrap.id='v22SummaryLayout';
     result.parentNode.insertBefore(wrap,result);wrap.appendChild(result);
@@ -149,7 +191,7 @@ export default {
     if(captainPath) html=patchCaptain(html);
     html=patchPreviewBadge(html,previewLabel(url.hostname));
     const headers=new Headers(response.headers);headers.delete('content-length');headers.delete('etag');
-    if(captainPath){headers.set('x-planet-captain-share','v22-compact-desktop');headers.set('x-planet-route','captain-worker-first');}
+    if(captainPath){headers.set('x-planet-captain-share','v22-dashboard-layout');headers.set('x-planet-route','captain-worker-first');}
     return new Response(html,{status:response.status,statusText:response.statusText,headers});
   }
 };
