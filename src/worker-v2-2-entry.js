@@ -66,14 +66,17 @@ const CAPTAIN_SHARE_SCRIPT = `
 
   const normalBtn=q('copySettlementSummary');
   const directBtn=q('copyDirectSummary');
+  const hasCalculatedNormal=()=>num(q('normalTake')?.textContent)>0||num(q('saleItemTotal')?.textContent)>0||num(q('receivedAmount')?.value)>0;
+  const hasCalculatedDirect=()=>num(q('directSellerNet')?.textContent)>0||num(q('directBudget')?.textContent)>0||num(q('marketPrice')?.value)>0;
   const sync=()=>{
-    if(normalBtn){const r=q('result');normalBtn.disabled=!(r&&getComputedStyle(r).display!=='none')}
-    if(directBtn){const r=q('directResult');directBtn.disabled=!(r&&getComputedStyle(r).display!=='none')}
+    if(normalBtn) normalBtn.disabled=!hasCalculatedNormal();
+    if(directBtn) directBtn.disabled=!hasCalculatedDirect();
   };
   normalBtn?.addEventListener('click',()=>{if(!normalBtn.disabled)copy(normalSummary(),normalBtn)});
   directBtn?.addEventListener('click',()=>{if(!directBtn.disabled)copy(directSummary(),directBtn)});
-  q('calc')?.addEventListener('click',()=>requestAnimationFrame(sync));
-  q('calcDirect')?.addEventListener('click',()=>requestAnimationFrame(sync));
+  q('calc')?.addEventListener('click',()=>setTimeout(sync,0));
+  q('calcDirect')?.addEventListener('click',()=>setTimeout(sync,0));
+  new MutationObserver(sync).observe(document.body,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['style','class']});
   sync();
 })();
 </script>`;
